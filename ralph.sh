@@ -18,6 +18,11 @@ set -euo pipefail
 
 RALPH_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Load notification configuration
+if [ -f "$HOME/.ralph.env" ]; then
+    source "$HOME/.ralph.env"
+fi
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
