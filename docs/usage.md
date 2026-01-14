@@ -1,24 +1,225 @@
 # Usage Guide
 
-Complete reference for using PortableRalph.
+This guide explains **what Ralph does**, **why you'd use each feature**, and **how to get the best results**.
 
-## Basic Usage
+---
+
+## :thinking: What Problem Does Ralph Solve?
+
+Imagine you want to add a new feature to your codebase. Normally you'd:
+
+1. Think about what needs to be done
+2. Break it into tasks
+3. Implement each task one by one
+4. Test, fix, repeat
+5. Commit your changes
+
+**Ralph automates this entire process.** You write a plan describing what you want, and Ralph figures out the tasks, implements them, tests them, and commits them—all autonomously.
+
+---
+
+## :rocket: The Two Modes Explained
+
+Ralph has two modes: **Plan** and **Build**. Understanding when to use each is key to getting great results.
+
+### :mag: Plan Mode — "Let me think about this first"
 
 ```bash
-~/ralph/ralph.sh <plan-file> [mode] [max-iterations]
+ralph ./feature.md plan
 ```
 
-Ralph reads your plan file and autonomously implements it, one task at a time.
+**What it does:**
 
-## Command Reference
+Plan mode is like asking a senior developer to review your feature request and create a task breakdown. Ralph will:
 
-### Arguments
+1. **Read your plan** to understand what you want
+2. **Explore your codebase** to see what already exists
+3. **Identify gaps** between current state and desired state
+4. **Create a task list** with logical ordering
+5. **Write everything down** in a progress file
 
-| Argument | Required | Default | Description |
-|:---------|:---------|:--------|:------------|
-| `plan-file` | Yes | - | Path to your plan/spec markdown file |
-| `mode` | No | `build` | `plan` or `build` |
-| `max-iterations` | No | unlimited | Maximum loop iterations |
+**Why use it:**
+
+| Situation | Why Plan Mode Helps |
+|:----------|:--------------------|
+| Complex features | See the full scope before committing |
+| Unfamiliar codebase | Let Ralph explore and document what exists |
+| Want to review first | Check the approach before any code changes |
+| Estimating work | Get a task breakdown to understand effort |
+
+!!! tip "Plan mode is safe"
+    Plan mode makes **zero code changes**. It only reads files and writes a progress file. You can run it as many times as you want.
+
+**Example output** (in `feature_PROGRESS.md`):
+
+```markdown
+## Analysis
+The codebase already has a User model in src/models/user.ts.
+Authentication middleware exists but doesn't validate JWTs.
+No existing login endpoint found.
+
+## Task List
+- [ ] Task 1: Add JWT dependency to package.json
+- [ ] Task 2: Create POST /auth/login endpoint
+- [ ] Task 3: Update auth middleware to validate JWTs
+- [ ] Task 4: Add tests for login flow
+- [ ] Task 5: Update API documentation
+```
+
+---
+
+### :hammer: Build Mode — "Go implement this"
+
+```bash
+ralph ./feature.md build
+```
+
+**What it does:**
+
+Build mode is the autonomous implementation engine. Ralph will:
+
+1. **Read the plan and progress file** to know what's done and what's left
+2. **Pick ONE task** from the list (the next uncompleted one)
+3. **Search the codebase** to make sure it's not already done
+4. **Implement the task** by writing/modifying code
+5. **Validate the work** by running tests, build, lint
+6. **Update the progress file** marking the task complete
+7. **Commit the changes** with a descriptive message
+8. **Loop back** and repeat until all tasks are done
+
+**Why use it:**
+
+| Situation | Why Build Mode Helps |
+|:----------|:---------------------|
+| You have a clear plan | Ralph executes it autonomously |
+| Repetitive implementation | Let Ralph handle the grunt work |
+| Overnight runs | Set it running and review in the morning |
+| After reviewing plan mode | You approved the approach, now execute |
+
+!!! warning "Build mode writes code"
+    Build mode **will modify your codebase**. Always review commits afterward, and use `max-iterations` for unattended runs.
+
+---
+
+## :arrows_counterclockwise: The Recommended Workflow
+
+For best results, use **Plan → Review → Build**:
+
+```bash
+# Step 1: Let Ralph analyze and create a task breakdown
+ralph ./my-feature.md plan
+
+# Step 2: Review the progress file
+cat ./my-feature_PROGRESS.md
+# Does the task list make sense?
+# Did Ralph understand your intent?
+# Any tasks missing or wrong?
+
+# Step 3: If it looks good, run build mode
+ralph ./my-feature.md build
+```
+
+**Why this workflow?**
+
+- **Catches misunderstandings early** — If Ralph misinterprets your plan, you'll see it in the task list before any code is written
+- **Gives you control** — You can edit the progress file to add/remove/reorder tasks before building
+- **Safer** — You review the approach before committing to it
+
+---
+
+## :shield: Safety Features
+
+### Max Iterations
+
+Limit how many tasks Ralph will complete:
+
+```bash
+# Stop after 10 iterations (tasks)
+ralph ./feature.md build 10
+```
+
+**When to use:**
+
+- Running unattended (overnight, CI/CD)
+- Testing Ralph on a new codebase
+- Large features where you want to review periodically
+
+### Manual Stop
+
+Press `Ctrl+C` at any time to stop Ralph. Your progress is saved—you can resume later by running the same command.
+
+### Review Commits
+
+Ralph commits after each task. If something goes wrong:
+
+```bash
+# See what Ralph did
+git log --oneline -5
+
+# Undo the last task
+git revert HEAD
+
+# Or reset multiple commits
+git reset --hard HEAD~3
+```
+
+---
+
+## :clipboard: The Progress File
+
+The progress file is Ralph's memory between iterations. It tracks:
+
+- **Status** — Is Ralph planning, building, or done?
+- **Analysis** — What Ralph learned about your codebase
+- **Task List** — All tasks with completion status
+- **Notes** — Important discoveries and decisions
+
+### Location
+
+The progress file is created in your **current directory** (not where the plan file is):
+
+| Plan File | Progress File |
+|:----------|:--------------|
+| `./feature.md` | `./feature_PROGRESS.md` |
+| `./docs/auth.md` | `./auth_PROGRESS.md` |
+| `/home/user/plans/api.md` | `./api_PROGRESS.md` |
+
+### Status Values
+
+| Status | Meaning | What to Do |
+|:-------|:--------|:-----------|
+| `PLANNING` | Plan mode is analyzing | Wait for it to finish |
+| `IN_PROGRESS` | Build mode is working | Monitor or let it run |
+| `RALPH_DONE` | All tasks complete! | Review the changes |
+
+### Editing the Progress File
+
+You can manually edit the progress file before running build mode:
+
+- **Add tasks** — Insert new `- [ ] Task: description` lines
+- **Remove tasks** — Delete lines you don't want
+- **Reorder tasks** — Move lines to change execution order
+- **Mark done** — Change `[ ]` to `[x]` to skip a task
+
+---
+
+## :zap: Quick Reference
+
+### Commands
+
+```bash
+# Analyze and create task list (safe, no code changes)
+ralph ./plan.md plan
+
+# Implement all tasks autonomously
+ralph ./plan.md build
+
+# Implement with a safety limit
+ralph ./plan.md build 20
+
+# Test your notification setup
+ralph --test-notify
+```
 
 ### Flags
 
@@ -26,187 +227,61 @@ Ralph reads your plan file and autonomously implements it, one task at a time.
 |:-----|:------------|
 | `--help`, `-h` | Show help message |
 | `--version`, `-v` | Show version |
-| `--test-notify` | Test notification configuration |
+| `--test-notify` | Send a test notification |
 
-### Examples
+---
 
-```bash
-# Build from a plan until complete
-~/ralph/ralph.sh ./docs/feature-spec.md
+## :bulb: Tips for Success
 
-# Plan mode only (analyze and create task list, no implementation)
-~/ralph/ralph.sh ./docs/feature-spec.md plan
+<div class="grid cards" markdown>
 
-# Build with max 20 iterations
-~/ralph/ralph.sh ./docs/feature-spec.md build 20
+-   :dart: **Write focused plans**
 
-# Plan with max 5 iterations
-~/ralph/ralph.sh ./docs/feature-spec.md plan 5
+    ---
 
-# Test notification setup
-~/ralph/ralph.sh --test-notify
-```
+    Smaller, specific plans work better than large vague ones. "Add user login" beats "Improve authentication system".
 
-## Modes
+-   :eyes: **Watch the first few iterations**
 
-### Plan Mode
+    ---
 
-```bash
-~/ralph/ralph.sh ./feature.md plan
-```
+    Monitor Ralph initially to make sure it understands your codebase and intent correctly.
 
-In plan mode, Ralph:
+-   :memo: **Review the progress file**
 
-1. Reads and analyzes your plan file
-2. Explores the codebase to understand what exists
-3. Creates a prioritized task list
-4. Identifies dependencies between tasks
-5. Updates the progress file with the analysis
+    ---
 
-!!! note
-    Plan mode does **not** make any code changes. Use it to review the approach before implementation.
+    After plan mode, check if the task breakdown makes sense before running build mode.
 
-**Use plan mode when:**
+-   :test_tube: **Have tests**
 
-- Starting a complex feature
-- You want to review the approach before implementation
-- You need to understand the scope of work
+    ---
 
-### Build Mode
+    Ralph runs your test suite to validate changes. Good tests = better results.
 
-```bash
-~/ralph/ralph.sh ./feature.md build
-```
+</div>
 
-In build mode, Ralph:
+---
 
-1. Reads the plan and progress file
-2. Picks ONE uncompleted task
-3. Searches codebase to verify it's not already done
-4. Implements the task
-5. Runs validation (tests, build, lint)
-6. Updates progress file and commits
-7. Loops back for the next task
+## :sos: Troubleshooting
 
-**Use build mode when:**
+### Ralph keeps doing the same task
 
-- You have a clear plan ready
-- You want autonomous implementation
-- After reviewing a plan mode output
+The task might be failing validation. Check:
 
-## Progress File
+- Are tests passing?
+- Is the build succeeding?
+- Look at the terminal output for errors
 
-Ralph creates `<plan-name>_PROGRESS.md` in your current directory.
+### Ralph misunderstood my plan
 
-### Location
+Run plan mode again with a clearer plan file, or manually edit the progress file to fix the task list.
 
-If your plan file is `./docs/auth-feature.md`, the progress file will be `./auth-feature_PROGRESS.md`.
+### Ralph is going in the wrong direction
 
-### Format
+Press `Ctrl+C` immediately, then:
 
-```markdown
-# Progress: auth-feature
-
-## Status
-IN_PROGRESS
-
-## Analysis
-Brief analysis of existing code vs what's needed.
-
-## Task List
-- [x] Task 1: Create user model
-- [x] Task 2: Add login endpoint
-- [ ] Task 3: Add JWT middleware
-- [ ] Task 4: Write tests
-
-## Completed This Iteration
-- Task 2: Added POST /auth/login endpoint with password validation
-
-## Notes
-- Found existing bcrypt helper in src/utils/crypto.ts
-- User model should extend BaseModel for timestamps
-```
-
-### Status Values
-
-| Status | Meaning |
-|:-------|:--------|
-| `PLANNING` | Plan mode is analyzing |
-| `IN_PROGRESS` | Build mode is implementing |
-| `RALPH_DONE` | All tasks complete, loop will exit |
-
-### Task Markers
-
-| Marker | Meaning |
-|:-------|:--------|
-| `[ ]` | Pending task |
-| `[x]` | Completed task |
-
-## Exit Conditions
-
-The Ralph loop exits when any of these occur:
-
-| Condition | Description |
-|:----------|:------------|
-| `RALPH_DONE` | All tasks complete - normal successful exit |
-| Max iterations | Limit reached (if specified) |
-| `Ctrl+C` | Manual stop - progress is saved |
-
-## Tips & Best Practices
-
-### Start with Plan Mode
-
-For complex features, always run plan mode first:
-
-```bash
-# First: create the task breakdown
-~/ralph/ralph.sh ./feature.md plan
-
-# Review the progress file
-cat ./feature_PROGRESS.md
-
-# Then: implement
-~/ralph/ralph.sh ./feature.md build
-```
-
-### Watch the Output
-
-Ralph runs in your terminal. Watch for:
-
-- Unexpected file changes
-- Test failures
-- Going off-track
-
-!!! warning
-    Use `Ctrl+C` if Ralph goes in the wrong direction.
-
-### Check Progress
-
-Monitor what Ralph is doing:
-
-```bash
-# In another terminal
-watch cat ./feature_PROGRESS.md
-```
-
-### Use Max Iterations for Safety
-
-For unattended runs, set a limit:
-
-```bash
-# Run overnight but cap at 50 iterations
-~/ralph/ralph.sh ./feature.md build 50
-```
-
-### Keep Plans Focused
-
-Smaller, focused plans work better than large monolithic ones.
-
-### Review Commits
-
-Ralph commits after each task. Review the git log:
-
-```bash
-git log --oneline -10
-git revert HEAD  # Undo last commit if needed
-```
+1. Review what changed: `git diff HEAD~1`
+2. Revert if needed: `git revert HEAD`
+3. Clarify your plan or edit the progress file
+4. Run again
