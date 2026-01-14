@@ -241,81 +241,110 @@ The progress file shows what Ralph is doing:
 cat ./my-plan_PROGRESS.md
 ```
 
-## Slack Notifications (Optional)
+## Notifications (Optional)
 
-Ralph can send notifications to Slack when:
+Ralph can send notifications to **Slack**, **Discord**, and **Telegram** when:
 - A run starts
 - Progress updates (every 5 iterations)
 - Work completes (RALPH_DONE)
 - Max iterations reached
 
-### Setup
+### Quick Setup (Recommended)
 
-1. Create a Slack Incoming Webhook:
-   - Go to [Slack API: Incoming Webhooks](https://api.slack.com/messaging/webhooks)
-   - Create a new app or use an existing one
-   - Enable Incoming Webhooks
-   - Create a webhook for your desired channel
-   - Copy the webhook URL
-
-2. Set the environment variable:
+Run the interactive setup wizard:
 ```bash
-# Option 1: Add to your shell profile (~/.bashrc or ~/.zshrc)
+~/ralph/setup-notifications.sh
+```
+
+The wizard will guide you through configuring one or more platforms and save your settings to `~/.ralph.env`.
+
+### Test Notifications
+
+```bash
+~/ralph/ralph.sh --test-notify
+```
+
+### Manual Setup
+
+If you prefer manual configuration, set environment variables for the platforms you want:
+
+#### Slack
+```bash
 export RALPH_SLACK_WEBHOOK_URL="https://hooks.slack.com/services/XXX/YYY/ZZZ"
+```
 
-# Option 2: Create a local config file
-echo 'export RALPH_SLACK_WEBHOOK_URL="https://hooks.slack.com/services/XXX/YYY/ZZZ"' > ~/.ralph.env
+To get a webhook URL:
+1. Go to [api.slack.com/apps](https://api.slack.com/apps)
+2. Create New App > From scratch
+3. Enable Incoming Webhooks
+4. Add webhook to workspace
+5. Copy the URL
+
+#### Discord
+```bash
+export RALPH_DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/XXX/YYY"
+```
+
+To get a webhook URL:
+1. Open Discord server settings
+2. Go to Integrations > Webhooks
+3. Create webhook, copy URL
+
+#### Telegram
+```bash
+export RALPH_TELEGRAM_BOT_TOKEN="123456789:ABCdefGHI..."
+export RALPH_TELEGRAM_CHAT_ID="123456789"
+```
+
+To set up:
+1. Message [@BotFather](https://t.me/BotFather) on Telegram
+2. Send `/newbot` and follow prompts
+3. Copy the bot token
+4. Start a chat with your bot, send any message
+5. Visit `https://api.telegram.org/bot<TOKEN>/getUpdates`
+6. Find your chat ID in the response
+
+### Configuration Reference
+
+| Variable | Platform | Description |
+|----------|----------|-------------|
+| `RALPH_SLACK_WEBHOOK_URL` | Slack | Incoming webhook URL |
+| `RALPH_SLACK_CHANNEL` | Slack | Override default channel |
+| `RALPH_SLACK_USERNAME` | Slack | Bot display name (default: Ralph) |
+| `RALPH_SLACK_ICON_EMOJI` | Slack | Bot icon (default: :robot_face:) |
+| `RALPH_DISCORD_WEBHOOK_URL` | Discord | Webhook URL |
+| `RALPH_DISCORD_USERNAME` | Discord | Bot display name (default: Ralph) |
+| `RALPH_DISCORD_AVATAR_URL` | Discord | Bot avatar image URL |
+| `RALPH_TELEGRAM_BOT_TOKEN` | Telegram | Bot token from @BotFather |
+| `RALPH_TELEGRAM_CHAT_ID` | Telegram | Chat/group/channel ID |
+
+### Persisting Configuration
+
+Add to your shell profile (`~/.bashrc` or `~/.zshrc`):
+```bash
 source ~/.ralph.env
-
-# Option 3: Pass inline when running
-RALPH_SLACK_WEBHOOK_URL="https://hooks.slack.com/..." ~/ralph/ralph.sh ./plan.md
 ```
 
-### Configuration Options
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `RALPH_SLACK_WEBHOOK_URL` | Yes* | - | Slack webhook URL (*required only if you want notifications) |
-| `RALPH_SLACK_CHANNEL` | No | (webhook default) | Override the default channel |
-| `RALPH_SLACK_USERNAME` | No | `Ralph` | Bot display name |
-| `RALPH_SLACK_ICON_EMOJI` | No | `:robot_face:` | Bot icon emoji |
-
-See `.env.example` for a template.
-
-### Notification Examples
-
-```
-:rocket: Ralph Started
-Plan: my-feature
-Mode: build
-Repo: my-project
-
-:gear: Ralph Progress: Iteration 5 completed
-Plan: my-feature
-
-:white_check_mark: Ralph Complete!
-Plan: my-feature
-Iterations: 12
-Repo: my-project
-```
+Or the wizard will offer to do this for you.
 
 ## Requirements
 
 - [Claude CLI](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated
 - Bash shell
 - Git (optional, for commits)
-- curl (for Slack notifications)
-- jq (optional, for better JSON handling in Slack messages)
+- curl (for notifications)
+- jq (optional, for better JSON handling)
 
 ## Files
 
 ```
 ~/ralph/
-├── ralph.sh          # Main script
-├── slack-notify.sh   # Slack notification helper (optional)
-├── PROMPT_plan.md    # Plan mode prompt template
-├── PROMPT_build.md   # Build mode prompt template
-├── .env.example      # Configuration template
+├── ralph.sh               # Main script
+├── notify.sh              # Multi-platform notification helper
+├── setup-notifications.sh # Interactive setup wizard
+├── PROMPT_plan.md         # Plan mode prompt template
+├── PROMPT_build.md        # Build mode prompt template
+├── .env.example           # Configuration template
 └── README.md
 ```
 
