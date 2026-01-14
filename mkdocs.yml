@@ -25,7 +25,7 @@ theme:
         name: Switch to dark mode
   font:
     text: Inter
-    code: JetBrains Mono
+    code: Roboto Mono
   features:
     - navigation.instant
     - navigation.tracking
@@ -52,6 +52,9 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - admonition
   - pymdownx.details
   - attr_list
@@ -59,6 +62,9 @@ markdown_extensions:
   - tables
   - toc:
       permalink: true
+
+extra_css:
+  - stylesheets/extra.css
 
 nav:
   - Home: index.md

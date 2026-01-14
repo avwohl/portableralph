@@ -4,36 +4,36 @@ Technical deep-dive into Ralph's architecture and execution model.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         ralph.sh                                 │
-│                    (Orchestration Loop)                          │
-└─────────────────────────────┬───────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      PROMPT_*.md                                 │
-│              (Mode-specific instructions)                        │
-│                                                                  │
-│   PROMPT_plan.md  ──────►  Analysis & task breakdown            │
-│   PROMPT_build.md ──────►  Implementation & validation          │
-└─────────────────────────────┬───────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       Claude CLI                                 │
-│            claude -p --dangerously-skip-permissions              │
-└─────────────────────────────┬───────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   Progress File                                  │
-│              <plan-name>_PROGRESS.md                             │
-│                                                                  │
-│   • Shared state between iterations                              │
-│   • Task list with completion status                             │
-│   • RALPH_DONE signals completion                                │
-└─────────────────────────────────────────────────────────────────┘
+```text
++------------------------------------------------------------------+
+|                         ralph.sh                                  |
+|                    (Orchestration Loop)                           |
++--------------------------------+---------------------------------+
+                                 |
+                                 v
++------------------------------------------------------------------+
+|                      PROMPT_*.md                                  |
+|              (Mode-specific instructions)                         |
+|                                                                   |
+|   PROMPT_plan.md  ------>  Analysis & task breakdown              |
+|   PROMPT_build.md ------>  Implementation & validation            |
++--------------------------------+---------------------------------+
+                                 |
+                                 v
++------------------------------------------------------------------+
+|                       Claude CLI                                  |
+|            claude -p --dangerously-skip-permissions               |
++--------------------------------+---------------------------------+
+                                 |
+                                 v
++------------------------------------------------------------------+
+|                   Progress File                                   |
+|              <plan-name>_PROGRESS.md                              |
+|                                                                   |
+|   - Shared state between iterations                               |
+|   - Task list with completion status                              |
+|   - RALPH_DONE signals completion                                 |
++------------------------------------------------------------------+
 ```
 
 ## Execution Flow
@@ -54,21 +54,21 @@ Technical deep-dive into Ralph's architecture and execution model.
 
 Each iteration:
 
-```
+```text
 1. Check exit conditions
-   ├─ RALPH_DONE in progress file? → Exit
-   └─ Max iterations reached? → Exit
+   |-- RALPH_DONE in progress file? -> Exit
+   +-- Max iterations reached? -> Exit
 
 2. Build prompt
-   └─ Substitute ${PLAN_FILE}, ${PROGRESS_FILE}, ${PLAN_NAME}
+   +-- Substitute ${PLAN_FILE}, ${PROGRESS_FILE}, ${PLAN_NAME}
 
 3. Execute Claude
-   └─ Claude reads files, implements task, updates progress
+   +-- Claude reads files, implements task, updates progress
 
 4. Post-iteration
-   ├─ Send notification (every 5 iterations)
-   ├─ Sleep 2 seconds
-   └─ Loop back to step 1
+   |-- Send notification (every 5 iterations)
+   |-- Sleep 2 seconds
+   +-- Loop back to step 1
 ```
 
 ### Termination
@@ -120,14 +120,14 @@ Each Claude invocation starts fresh—no memory of previous iterations. The prog
 # Progress: feature-name
 
 ## Status
-IN_PROGRESS          ← Controls loop
+IN_PROGRESS          <-- Controls loop
 
 ## Task List
-- [x] Completed       ← What's done
-- [ ] Pending         ← What's left
+- [x] Completed       <-- What's done
+- [ ] Pending         <-- What's left
 
 ## Notes
-- Discoveries         ← Knowledge transfer
+- Discoveries         <-- Knowledge transfer
 ```
 
 ### Why Fresh Context?
@@ -151,13 +151,13 @@ IN_PROGRESS          ← Controls loop
 
 ### Flow
 
-```
+```text
 notify.sh
-    │
-    ├──► Slack (webhook)
-    ├──► Discord (webhook)
-    ├──► Telegram (bot API)
-    └──► Custom (your script)
+    |
+    |---> Slack (webhook)
+    |---> Discord (webhook)
+    |---> Telegram (bot API)
+    +---> Custom (your script)
 ```
 
 Messages sent to **all** configured platforms. Unconfigured platforms silently skipped.
@@ -165,22 +165,22 @@ Messages sent to **all** configured platforms. Unconfigured platforms silently s
 ### Custom Script Interface
 
 ```bash
-$1 = "🚀 Ralph Started\nPlan: feature\nMode: build"
+$1 = "Ralph Started\nPlan: feature\nMode: build"
 ```
 
 Your script handles delivery. Exit code ignored.
 
 ## Files
 
-```
+```text
 ~/ralph/
-├── ralph.sh               # Orchestration loop
-├── notify.sh              # Notification dispatcher
-├── setup-notifications.sh # Setup wizard
-├── PROMPT_plan.md         # Plan mode prompt
-├── PROMPT_build.md        # Build mode prompt
-├── .env.example           # Config template
-└── docs/                  # Documentation
+|-- ralph.sh               # Orchestration loop
+|-- notify.sh              # Notification dispatcher
+|-- setup-notifications.sh # Setup wizard
+|-- PROMPT_plan.md         # Plan mode prompt
+|-- PROMPT_build.md        # Build mode prompt
+|-- .env.example           # Config template
++-- docs/                  # Documentation
 ```
 
 ## Security
