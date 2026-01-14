@@ -1,0 +1,18 @@
+/* Fix ASCII art alignment in code blocks */
+.md-typeset pre code,
+.md-typeset code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-variant-ligatures: none;
+  -webkit-font-feature-settings: "liga" 0;
+  font-feature-settings: "liga" 0;
+}
+
+.md-typeset pre {
+  line-height: 1.4;
+}
+
+/* Ensure box-drawing characters align properly */
+.md-typeset pre code {
+  letter-spacing: 0;
+  word-spacing: 0;
+}
