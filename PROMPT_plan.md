@@ -40,7 +40,7 @@ Update ${PROGRESS_FILE} with this structure:
 # Progress: ${PLAN_NAME}
 
 ## Status
-PLANNING (or IN_PROGRESS or RALPH_DONE)
+IN_PROGRESS
 
 ## Analysis
 <your analysis of what exists vs what's needed>
@@ -48,11 +48,12 @@ PLANNING (or IN_PROGRESS or RALPH_DONE)
 ## Task List
 - [ ] Task 1: description
 - [ ] Task 2: description
-- [x] Task 3: completed task
 ...
 
 ## Notes
 <any important discoveries or decisions>
 ```
 
-When planning is complete, change Status to IN_PROGRESS so build mode can begin.
+**IMPORTANT**: Always set Status to `IN_PROGRESS` when planning is complete. This signals that build mode can begin.
+
+**NEVER set status to `RALPH_DONE`** - that status is only for build mode to set after ALL tasks are implemented and verified.

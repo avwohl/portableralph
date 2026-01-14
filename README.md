@@ -128,14 +128,14 @@ See [Notifications Guide](https://aaron777collins.github.io/portableralph/notifi
 Invoke Ralph from another AI agent:
 
 ```bash
-# Run until RALPH_DONE
-~/ralph/ralph.sh /absolute/path/to/plan.md build
-
-# Plan only
+# Plan first (analyzes codebase, creates task list, sets status to IN_PROGRESS)
 ~/ralph/ralph.sh /absolute/path/to/plan.md plan
+
+# Then build (implements tasks one by one until RALPH_DONE)
+~/ralph/ralph.sh /absolute/path/to/plan.md build
 ```
 
-Exit signal: Add `RALPH_DONE` to `<plan-name>_PROGRESS.md` when complete.
+**Important:** Only build mode should set `RALPH_DONE` (after all tasks complete). Plan mode should always set status to `IN_PROGRESS` when done.
 
 ## License
 

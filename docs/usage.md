@@ -186,11 +186,13 @@ The progress file is created in your **current directory** (not where the plan f
 
 ### Status Values
 
-| Status | Meaning | What to Do |
-|:-------|:--------|:-----------|
-| `PLANNING` | Plan mode is analyzing | Wait for it to finish |
-| `IN_PROGRESS` | Build mode is working | Monitor or let it run |
-| `RALPH_DONE` | All tasks complete! | Review the changes |
+| Status | Meaning | Set By | What to Do |
+|:-------|:--------|:-------|:-----------|
+| `IN_PROGRESS` | Ready for build mode | Plan mode | Run build mode |
+| `RALPH_DONE` | All tasks complete! | Build mode only | Review the changes |
+
+!!! warning "Important"
+    **Only build mode should set `RALPH_DONE`** — after ALL tasks are implemented and verified. Plan mode should always set status to `IN_PROGRESS` when complete, signaling that build mode can begin.
 
 ### Editing the Progress File
 

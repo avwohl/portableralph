@@ -90,9 +90,13 @@ Used in `plan` mode. Instructs Claude to:
 3. Identify what exists vs. what's needed
 4. Create a prioritized task breakdown
 5. Update progress file with analysis
+6. Set status to `IN_PROGRESS` when done
 
 !!! info "Important"
     Plan mode makes **no code changes**—analysis only.
+
+!!! warning "Critical"
+    Plan mode must **never** set `RALPH_DONE`. It should always set status to `IN_PROGRESS` when planning is complete, allowing build mode to execute the tasks.
 
 ### PROMPT_build.md
 
