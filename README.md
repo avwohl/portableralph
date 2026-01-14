@@ -243,7 +243,7 @@ cat ./my-plan_PROGRESS.md
 
 ## Notifications (Optional)
 
-Ralph can send notifications to **Slack**, **Discord**, and **Telegram** when:
+Ralph can send notifications to **Slack**, **Discord**, **Telegram**, and **Custom scripts** when:
 - A run starts
 - Progress updates (every 5 iterations)
 - Work completes (RALPH_DONE)
@@ -304,6 +304,30 @@ To set up:
 5. Visit `https://api.telegram.org/bot<TOKEN>/getUpdates`
 6. Find your chat ID in the response
 
+#### Custom Script (Proprietary Integrations)
+```bash
+export RALPH_CUSTOM_NOTIFY_SCRIPT="/path/to/your/notify-script.sh"
+```
+
+For custom/proprietary integrations (database bridges, internal APIs, etc.).
+Your script receives the message as `$1` and handles delivery however you need.
+
+**Example script:**
+```bash
+#!/bin/bash
+MESSAGE="$1"
+# Insert into database that syncs to Slack
+docker exec mydb psql -c "INSERT INTO notifications (msg) VALUES ('$MESSAGE');"
+# Or call internal API
+curl -X POST -d "text=$MESSAGE" https://internal.api/notify
+```
+
+**Use cases:**
+- Database-to-Slack bridge (app polls DB and posts to Slack)
+- Internal company notification API
+- SMS/email gateway
+- Any custom webhook format
+
 ### Configuration Reference
 
 | Variable | Platform | Description |
@@ -317,6 +341,7 @@ To set up:
 | `RALPH_DISCORD_AVATAR_URL` | Discord | Bot avatar image URL |
 | `RALPH_TELEGRAM_BOT_TOKEN` | Telegram | Bot token from @BotFather |
 | `RALPH_TELEGRAM_CHAT_ID` | Telegram | Chat/group/channel ID |
+| `RALPH_CUSTOM_NOTIFY_SCRIPT` | Custom | Path to your notification script |
 
 ### Persisting Configuration
 

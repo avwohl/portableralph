@@ -1,6 +1,6 @@
 #!/bin/bash
 # setup-notifications.sh - Interactive setup wizard for Ralph notifications
-# Supports: Slack, Discord, and Telegram
+# Supports: Slack, Discord, Telegram, and Custom scripts
 #
 # Usage:
 #   ~/ralph/setup-notifications.sh
@@ -53,6 +53,7 @@ SLACK_URL=""
 DISCORD_URL=""
 TELEGRAM_TOKEN=""
 TELEGRAM_CHAT=""
+CUSTOM_SCRIPT=""
 
 # ============================================
 # PLATFORM SELECTION
@@ -62,17 +63,19 @@ echo ""
 echo "  1) Slack"
 echo "  2) Discord"
 echo "  3) Telegram"
-echo "  4) All of the above"
-echo "  5) Cancel"
+echo "  4) Custom script (for proprietary integrations)"
+echo "  5) All standard platforms (1-3)"
+echo "  6) Cancel"
 echo ""
-read -p "Enter your choice (1-5): " PLATFORM_CHOICE
+read -p "Enter your choice (1-6): " PLATFORM_CHOICE
 
 case "$PLATFORM_CHOICE" in
-    1) SETUP_SLACK=true; SETUP_DISCORD=false; SETUP_TELEGRAM=false ;;
-    2) SETUP_SLACK=false; SETUP_DISCORD=true; SETUP_TELEGRAM=false ;;
-    3) SETUP_SLACK=false; SETUP_DISCORD=false; SETUP_TELEGRAM=true ;;
-    4) SETUP_SLACK=true; SETUP_DISCORD=true; SETUP_TELEGRAM=true ;;
-    5) echo "Setup cancelled."; exit 0 ;;
+    1) SETUP_SLACK=true; SETUP_DISCORD=false; SETUP_TELEGRAM=false; SETUP_CUSTOM=false ;;
+    2) SETUP_SLACK=false; SETUP_DISCORD=true; SETUP_TELEGRAM=false; SETUP_CUSTOM=false ;;
+    3) SETUP_SLACK=false; SETUP_DISCORD=false; SETUP_TELEGRAM=true; SETUP_CUSTOM=false ;;
+    4) SETUP_SLACK=false; SETUP_DISCORD=false; SETUP_TELEGRAM=false; SETUP_CUSTOM=true ;;
+    5) SETUP_SLACK=true; SETUP_DISCORD=true; SETUP_TELEGRAM=true; SETUP_CUSTOM=false ;;
+    6) echo "Setup cancelled."; exit 0 ;;
     *) echo -e "${RED}Invalid choice. Exiting.${NC}"; exit 1 ;;
 esac
 
@@ -175,6 +178,58 @@ if [ "$SETUP_TELEGRAM" = true ]; then
 fi
 
 # ============================================
+# CUSTOM SCRIPT SETUP
+# ============================================
+if [ "$SETUP_CUSTOM" = true ]; then
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BOLD}Custom Script Setup${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo "Custom scripts let you integrate with proprietary systems."
+    echo "Your script receives the notification message as \$1."
+    echo ""
+    echo -e "${BOLD}How it works:${NC}"
+    echo "  1. Create a script that accepts a message argument"
+    echo "  2. Your script handles delivery (API call, database insert, etc.)"
+    echo "  3. Ralph calls your script for each notification"
+    echo ""
+    echo -e "${BOLD}Example script (my-notify.sh):${NC}"
+    echo -e "  ${CYAN}#!/bin/bash"
+    echo -e "  MESSAGE=\"\$1\""
+    echo -e "  curl -X POST -d \"text=\$MESSAGE\" https://your.api/notify${NC}"
+    echo ""
+    echo -e "${BOLD}Use cases:${NC}"
+    echo "  - Database-to-Slack bridge (insert into DB, service posts to Slack)"
+    echo "  - Internal company notification API"
+    echo "  - SMS or email gateway"
+    echo "  - Custom webhook format"
+    echo ""
+    read -p "Path to your notification script (or press Enter to skip): " CUSTOM_SCRIPT
+
+    if [ -n "$CUSTOM_SCRIPT" ]; then
+        # Expand ~ to home directory
+        CUSTOM_SCRIPT="${CUSTOM_SCRIPT/#\~/$HOME}"
+
+        if [ -x "$CUSTOM_SCRIPT" ]; then
+            echo -e "${GREEN}Custom script configured: $CUSTOM_SCRIPT${NC}"
+        elif [ -f "$CUSTOM_SCRIPT" ]; then
+            echo -e "${YELLOW}Warning: Script exists but is not executable.${NC}"
+            read -p "Make it executable? (Y/n): " MAKE_EXEC
+            if [[ ! "$MAKE_EXEC" =~ ^[Nn]$ ]]; then
+                chmod +x "$CUSTOM_SCRIPT"
+                echo -e "${GREEN}Made executable. Custom script configured.${NC}"
+            fi
+        else
+            echo -e "${YELLOW}Warning: Script not found at $CUSTOM_SCRIPT${NC}"
+            echo "Make sure the script exists before running Ralph."
+        fi
+    else
+        echo -e "${YELLOW}Custom script skipped.${NC}"
+    fi
+fi
+
+# ============================================
 # SAVE CONFIGURATION
 # ============================================
 echo ""
@@ -184,7 +239,7 @@ echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Check if anything was configured
-if [ -z "$SLACK_URL" ] && [ -z "$DISCORD_URL" ] && [ -z "$TELEGRAM_TOKEN" ]; then
+if [ -z "$SLACK_URL" ] && [ -z "$DISCORD_URL" ] && [ -z "$TELEGRAM_TOKEN" ] && [ -z "$CUSTOM_SCRIPT" ]; then
     echo -e "${YELLOW}No platforms were configured.${NC}"
     echo "Run this wizard again when you're ready."
     exit 0
@@ -214,6 +269,12 @@ if [ -n "$TELEGRAM_TOKEN" ]; then
     echo "# Telegram" >> "$CONFIG_FILE"
     echo "export RALPH_TELEGRAM_BOT_TOKEN=\"$TELEGRAM_TOKEN\"" >> "$CONFIG_FILE"
     echo "export RALPH_TELEGRAM_CHAT_ID=\"$TELEGRAM_CHAT\"" >> "$CONFIG_FILE"
+    echo "" >> "$CONFIG_FILE"
+fi
+
+if [ -n "$CUSTOM_SCRIPT" ]; then
+    echo "# Custom Script" >> "$CONFIG_FILE"
+    echo "export RALPH_CUSTOM_NOTIFY_SCRIPT=\"$CUSTOM_SCRIPT\"" >> "$CONFIG_FILE"
     echo "" >> "$CONFIG_FILE"
 fi
 

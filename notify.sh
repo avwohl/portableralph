@@ -1,6 +1,6 @@
 #!/bin/bash
 # notify.sh - Multi-platform notifications for Ralph
-# Supports: Slack, Discord, and Telegram
+# Supports: Slack, Discord, Telegram, and Custom scripts
 #
 # Configuration (via environment variables):
 #
@@ -18,6 +18,12 @@
 #   TELEGRAM:
 #     RALPH_TELEGRAM_BOT_TOKEN - Telegram bot token (from @BotFather)
 #     RALPH_TELEGRAM_CHAT_ID   - Chat/group/channel ID to send to
+#
+#   CUSTOM:
+#     RALPH_CUSTOM_NOTIFY_SCRIPT - Path to custom notification script
+#                                  Script receives message as $1
+#                                  Use this for proprietary integrations
+#                                  (database bridges, internal APIs, etc.)
 #
 # Usage:
 #   ./notify.sh "Your message here"
@@ -190,6 +196,50 @@ send_telegram() {
 }
 
 # ============================================
+# CUSTOM SCRIPT
+# ============================================
+# For proprietary integrations (database bridges, internal APIs, etc.)
+# Your script receives the message as $1 and handles delivery however you need.
+#
+# Example use cases:
+#   - Database-to-Slack bridge (insert into DB, separate service posts to Slack)
+#   - Internal company notification API
+#   - SMS gateway
+#   - Email relay
+#
+# Example script (my-notify.sh):
+#   #!/bin/bash
+#   MESSAGE="$1"
+#   curl -X POST -d "message=$MESSAGE" https://internal.api/notify
+#
+send_custom() {
+    local msg="$1"
+
+    if [ -z "${RALPH_CUSTOM_NOTIFY_SCRIPT:-}" ]; then
+        return 0
+    fi
+
+    # Verify script exists and is executable
+    if [ ! -x "$RALPH_CUSTOM_NOTIFY_SCRIPT" ]; then
+        $TEST_MODE && echo "  Custom: FAILED (script not found or not executable)"
+        return 1
+    fi
+
+    # Strip Slack-style emoji codes for cleaner output
+    local clean_msg
+    clean_msg=$(echo "$msg" | sed 's/:rocket:/🚀/g; s/:white_check_mark:/✅/g; s/:warning:/⚠️/g; s/:gear:/⚙️/g; s/:robot_face:/🤖/g; s/:x:/❌/g')
+
+    if "$RALPH_CUSTOM_NOTIFY_SCRIPT" "$clean_msg" > /dev/null 2>&1; then
+        SENT_ANY=true
+        $TEST_MODE && echo "  Custom: sent"
+        return 0
+    else
+        $TEST_MODE && echo "  Custom: FAILED"
+        return 1
+    fi
+}
+
+# ============================================
 # MAIN
 # ============================================
 
@@ -200,6 +250,7 @@ if $TEST_MODE; then
     [ -n "${RALPH_SLACK_WEBHOOK_URL:-}" ] && echo "  - Slack: configured" || echo "  - Slack: not configured"
     [ -n "${RALPH_DISCORD_WEBHOOK_URL:-}" ] && echo "  - Discord: configured" || echo "  - Discord: not configured"
     [ -n "${RALPH_TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${RALPH_TELEGRAM_CHAT_ID:-}" ] && echo "  - Telegram: configured" || echo "  - Telegram: not configured"
+    [ -n "${RALPH_CUSTOM_NOTIFY_SCRIPT:-}" ] && echo "  - Custom: configured ($RALPH_CUSTOM_NOTIFY_SCRIPT)" || echo "  - Custom: not configured"
     echo ""
     echo "Sending test message..."
 fi
@@ -208,6 +259,7 @@ fi
 send_slack "$MESSAGE" || true
 send_discord "$MESSAGE" || true
 send_telegram "$MESSAGE" || true
+send_custom "$MESSAGE" || true
 
 if $TEST_MODE; then
     echo ""

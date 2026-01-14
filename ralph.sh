@@ -25,7 +25,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-VERSION="1.2.0"
+VERSION="1.3.0"
 
 # Notification helper (sends to all configured platforms: Slack, Discord, Telegram)
 notify() {
@@ -37,7 +37,8 @@ notify() {
 notifications_enabled() {
     [ -n "${RALPH_SLACK_WEBHOOK_URL:-}" ] || \
     [ -n "${RALPH_DISCORD_WEBHOOK_URL:-}" ] || \
-    ([ -n "${RALPH_TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${RALPH_TELEGRAM_CHAT_ID:-}" ])
+    ([ -n "${RALPH_TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${RALPH_TELEGRAM_CHAT_ID:-}" ]) || \
+    [ -n "${RALPH_CUSTOM_NOTIFY_SCRIPT:-}" ]
 }
 
 usage() {
@@ -157,6 +158,7 @@ if notifications_enabled; then
     [ -n "${RALPH_SLACK_WEBHOOK_URL:-}" ] && PLATFORMS="${PLATFORMS}Slack "
     [ -n "${RALPH_DISCORD_WEBHOOK_URL:-}" ] && PLATFORMS="${PLATFORMS}Discord "
     [ -n "${RALPH_TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${RALPH_TELEGRAM_CHAT_ID:-}" ] && PLATFORMS="${PLATFORMS}Telegram "
+    [ -n "${RALPH_CUSTOM_NOTIFY_SCRIPT:-}" ] && PLATFORMS="${PLATFORMS}Custom "
     echo -e "  Notify:    ${GREEN}${PLATFORMS}${NC}"
 else
     echo -e "  Notify:    ${YELLOW}disabled${NC} (run ~/ralph/setup-notifications.sh)"
