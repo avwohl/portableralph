@@ -25,24 +25,61 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+VERSION="1.0.0"
+
 usage() {
-    echo "Usage: $0 <plan-file> [plan|build] [max-iterations]"
+    echo -e "${GREEN}PortableRalph${NC} v${VERSION} - Autonomous AI Development Loop"
     echo ""
-    echo "Arguments:"
+    echo -e "${YELLOW}Usage:${NC}"
+    echo "  ~/ralph/ralph.sh <plan-file> [mode] [max-iterations]"
+    echo "  ~/ralph/ralph.sh --help | -h"
+    echo "  ~/ralph/ralph.sh --version | -v"
+    echo ""
+    echo -e "${YELLOW}Arguments:${NC}"
     echo "  plan-file       Path to your plan/spec file (required)"
     echo "  mode            'plan' or 'build' (default: build)"
     echo "  max-iterations  Maximum loop iterations (default: unlimited)"
     echo ""
-    echo "Examples:"
-    echo "  $0 ./feature-spec.md              # Build until done"
-    echo "  $0 ./feature-spec.md plan         # Plan only"
-    echo "  $0 ./feature-spec.md build 50     # Build, max 50 iterations"
-    exit 1
+    echo -e "${YELLOW}Modes:${NC}"
+    echo "  plan   Analyze codebase, create task list in progress file"
+    echo "  build  Implement tasks one at a time until RALPH_DONE"
+    echo ""
+    echo -e "${YELLOW}Examples:${NC}"
+    echo "  ~/ralph/ralph.sh ./feature.md              # Build until done"
+    echo "  ~/ralph/ralph.sh ./feature.md plan         # Plan only"
+    echo "  ~/ralph/ralph.sh ./feature.md build 20     # Build, max 20 iterations"
+    echo "  ~/ralph/ralph.sh ./feature.md plan 5       # Plan, max 5 iterations"
+    echo ""
+    echo -e "${YELLOW}Exit Conditions:${NC}"
+    echo "  - RALPH_DONE appears in <plan-name>_PROGRESS.md"
+    echo "  - Max iterations reached (if specified)"
+    echo "  - Ctrl+C"
+    echo ""
+    echo -e "${YELLOW}Progress File:${NC}"
+    echo "  Created as <plan-name>_PROGRESS.md in current directory"
+    echo "  This is the only artifact left in your repo"
+    echo ""
+    echo "More info: https://github.com/aaron777collins/portableralph"
+    exit 0
+}
+
+version() {
+    echo "PortableRalph v${VERSION}"
+    exit 0
 }
 
 # Parse arguments
 if [ $# -lt 1 ]; then
     usage
+fi
+
+# Handle help and version flags
+if [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ "$1" = "help" ]; then
+    usage
+fi
+
+if [ "$1" = "--version" ] || [ "$1" = "-v" ]; then
+    version
 fi
 
 PLAN_FILE="$1"
