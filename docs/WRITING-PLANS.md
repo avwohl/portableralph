@@ -1,12 +1,31 @@
+---
+layout: default
+title: Writing Plans
+nav_order: 3
+description: "How to write effective plan files for Ralph"
+permalink: /docs/WRITING-PLANS
+---
+
 # Writing Effective Plans
+{: .no_toc }
 
 How to write plan files that Ralph can execute successfully.
+{: .fs-6 .fw-300 }
 
-## Overview
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+1. TOC
+{:toc}
+</details>
 
-A plan file is a markdown document that describes what you want Ralph to build. The better your plan, the better Ralph's output.
+---
 
 ## Basic Structure
+
+A plan file is a markdown document describing what you want Ralph to build.
 
 ```markdown
 # [Type]: [Short Title]
@@ -24,6 +43,11 @@ What you want to achieve in 1-2 sentences.
 - Constraints or preferences
 - Technical decisions already made
 ```
+
+{: .highlight }
+The better your plan, the better Ralph's output.
+
+---
 
 ## Plan Types
 
@@ -98,27 +122,21 @@ Consolidate scattered fetch calls into a centralized API client.
 - Don't change API response shapes
 - Maintain existing error messages for users
 - Keep all existing tests passing
-
-## Files to Update
-- src/components/*.tsx (all files with fetch calls)
-- src/lib/api.ts (create new)
-- src/types/api.ts (add error types)
 ```
 
-### Migration/Upgrade
+### Migration
 
 ```markdown
 # Migrate: React Router v5 to v6
 
 ## Goal
-Upgrade from React Router v5 to v6 for improved performance and hooks API.
+Upgrade from React Router v5 to v6 for improved performance.
 
 ## Scope
 - Update react-router-dom to v6
 - Migrate all route definitions
 - Update all useHistory to useNavigate
 - Update all <Switch> to <Routes>
-- Update all <Route> component patterns
 
 ## Out of Scope
 - Adding new routes
@@ -128,25 +146,27 @@ Upgrade from React Router v5 to v6 for improved performance and hooks API.
 ## Testing
 - All existing routes must work identically
 - Deep links must resolve correctly
-- Back/forward navigation must work
 ```
+
+---
 
 ## Best Practices
 
 ### Be Specific
 
+{: .important }
+Vague plans produce vague results.
+
 ```markdown
-# Bad: vague
+# Bad
 ## Requirements
 - Make the app faster
 - Improve the UI
-- Fix bugs
 
-# Good: specific
+# Good
 ## Requirements
 - Reduce initial load time to under 2 seconds
 - Add loading skeletons to dashboard cards
-- Fix: clicking "Save" twice creates duplicate entries
 ```
 
 ### Define Acceptance Criteria
@@ -154,9 +174,9 @@ Upgrade from React Router v5 to v6 for improved performance and hooks API.
 ```markdown
 ## Acceptance Criteria
 - User can upload avatar via drag-and-drop or file picker
-- Uploads over 5MB show error message
-- Invalid file types show "Please upload a JPEG or PNG"
-- Avatar appears immediately after upload (no refresh needed)
+- Uploads over 5MB show error: "File too large (max 5MB)"
+- Invalid file types show: "Please upload a JPEG or PNG"
+- Avatar appears immediately after upload (no refresh)
 ```
 
 ### Include Context
@@ -164,8 +184,8 @@ Upgrade from React Router v5 to v6 for improved performance and hooks API.
 ```markdown
 ## Technical Context
 - We use Prisma for database access (see prisma/schema.prisma)
-- Auth is handled by NextAuth (see src/pages/api/auth/[...nextauth].ts)
-- Follow the existing pattern in src/lib/users.ts for user operations
+- Auth is handled by NextAuth (see pages/api/auth/[...nextauth].ts)
+- Follow the existing pattern in src/lib/users.ts
 ```
 
 ### Set Boundaries
@@ -181,6 +201,8 @@ Upgrade from React Router v5 to v6 for improved performance and hooks API.
 - Multiple avatar sizes
 - Avatar deletion
 ```
+
+---
 
 ## Tips for Complex Plans
 
@@ -213,7 +235,6 @@ plans/
 ### Request
 POST /api/avatars
 Content-Type: multipart/form-data
-
 file: <binary>
 
 ### Response (success)
@@ -229,19 +250,22 @@ file: <binary>
 }
 ```
 
+---
+
 ## Common Mistakes
 
 | Mistake | Problem | Fix |
-|---------|---------|-----|
+|:--------|:--------|:----|
 | Too vague | Ralph guesses wrong | Add specific requirements |
-| Too large | Takes forever, goes off track | Break into smaller plans |
-| No context | Ralph reinvents patterns | Reference existing code |
+| Too large | Takes forever | Break into smaller plans |
+| No context | Reinvents patterns | Reference existing code |
 | No criteria | Can't verify completion | Add acceptance criteria |
-| Assumes state | Ralph can't find things | Describe current state |
+
+---
 
 ## Template
 
-Copy this template to start a new plan:
+Copy this to start a new plan:
 
 ```markdown
 # [Fix/Feature/Refactor]: [Title]
@@ -270,4 +294,5 @@ Copy this template to start a new plan:
 
 ---
 
-Next: [How It Works](./HOW-IT-WORKS.md) | [Usage Guide](./USAGE.md)
+[← Usage Guide]({{ site.baseurl }}/docs/USAGE){: .btn .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[Notifications →]({{ site.baseurl }}/docs/NOTIFICATIONS){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 }

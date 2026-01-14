@@ -1,8 +1,20 @@
+---
+layout: home
+title: Home
+nav_order: 1
+description: "An autonomous AI development loop that works in any repo."
+permalink: /
+---
+
 # PortableRalph
 
 An autonomous AI development loop that works in **any repo**.
+{: .fs-6 .fw-300 }
 
-[**View Documentation →**](https://aaron777collins.github.io/portableralph/)
+[Get Started]({{ site.baseurl }}/docs/USAGE){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[View on GitHub](https://github.com/aaron777collins/portableralph){: .btn .fs-5 .mb-4 .mb-md-0 }
+
+---
 
 ```bash
 ~/ralph/ralph.sh ./feature-plan.md
@@ -46,7 +58,7 @@ chmod +x ~/ralph/*.sh
 ```
 
 | Mode | Description |
-|------|-------------|
+|:-----|:------------|
 | `build` | Implement tasks (default) |
 | `plan` | Analyze and create task list only |
 
@@ -75,7 +87,7 @@ Add JWT-based authentication to the API.
 - Protected endpoints return 401 without valid token
 ```
 
-See [Writing Effective Plans](./docs/WRITING-PLANS.md) for more examples.
+[Learn more about writing plans →]({{ site.baseurl }}/docs/WRITING-PLANS)
 
 ## Notifications
 
@@ -86,16 +98,7 @@ Get notified on Slack, Discord, Telegram, or custom integrations:
 ~/ralph/ralph.sh --test-notify   # Test your config
 ```
 
-See [Notifications Guide](./docs/NOTIFICATIONS.md) for setup details.
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [Usage Guide](./docs/USAGE.md) | Complete command reference |
-| [Writing Plans](./docs/WRITING-PLANS.md) | How to write effective plans |
-| [Notifications](./docs/NOTIFICATIONS.md) | Slack, Discord, Telegram setup |
-| [How It Works](./docs/HOW-IT-WORKS.md) | Technical architecture |
+[Set up notifications →]({{ site.baseurl }}/docs/NOTIFICATIONS)
 
 ## Requirements
 
@@ -103,18 +106,7 @@ See [Notifications Guide](./docs/NOTIFICATIONS.md) for setup details.
 - Bash shell
 - Git (optional, for auto-commits)
 
-## Files
-
-```
-~/ralph/
-├── ralph.sh               # Main loop
-├── notify.sh              # Notification dispatcher
-├── setup-notifications.sh # Setup wizard
-├── PROMPT_plan.md         # Plan mode instructions
-├── PROMPT_build.md        # Build mode instructions
-├── .env.example           # Config template
-└── docs/                  # Documentation
-```
+---
 
 ## For AI Agents
 
@@ -129,10 +121,6 @@ Invoke Ralph from another AI agent:
 ```
 
 Exit signal: Add `RALPH_DONE` to `<plan-name>_PROGRESS.md` when complete.
-
-## License
-
-MIT
 
 ---
 

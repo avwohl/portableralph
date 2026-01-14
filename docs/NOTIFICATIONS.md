@@ -1,23 +1,46 @@
+---
+layout: default
+title: Notifications
+nav_order: 4
+description: "Set up Slack, Discord, Telegram, or custom notifications"
+permalink: /docs/NOTIFICATIONS
+---
+
 # Notifications
+{: .no_toc }
 
 Get notified when Ralph starts, progresses, and completes work.
+{: .fs-6 .fw-300 }
+
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+1. TOC
+{:toc}
+</details>
+
+---
 
 ## Overview
 
 Ralph supports four notification channels:
 
-| Platform | Setup Difficulty | Best For |
-|----------|-----------------|----------|
-| **Slack** | Easy | Team channels |
-| **Discord** | Easy | Personal/community servers |
-| **Telegram** | Medium | Mobile notifications |
+| Platform | Setup Time | Best For |
+|:---------|:-----------|:---------|
+| **Slack** | ~2 min | Team channels |
+| **Discord** | ~1 min | Personal/community servers |
+| **Telegram** | ~3 min | Mobile notifications |
 | **Custom** | Varies | Proprietary systems |
 
-Notifications are sent:
-- When a run **starts**
-- Every **5 iterations** (progress update)
-- When work **completes** (RALPH_DONE)
-- When **max iterations** reached
+Notifications fire when:
+- Run **starts**
+- Every **5 iterations** (progress)
+- Work **completes** (RALPH_DONE)
+- **Max iterations** reached
+
+---
 
 ## Quick Setup
 
@@ -27,11 +50,7 @@ Run the interactive wizard:
 ~/ralph/setup-notifications.sh
 ```
 
-The wizard walks you through configuring any or all platforms.
-
-## Testing
-
-Verify your setup:
+Test your configuration:
 
 ```bash
 ~/ralph/ralph.sh --test-notify
@@ -43,73 +62,68 @@ Verify your setup:
 
 ### Slack
 
-**Time:** ~2 minutes
-
 1. Go to [api.slack.com/apps](https://api.slack.com/apps)
-2. Click **Create New App** → **From scratch**
+2. **Create New App** → **From scratch**
 3. Name it "Ralph", select your workspace
-4. Navigate to **Incoming Webhooks** in sidebar
-5. Toggle **Activate Incoming Webhooks** to ON
+4. Navigate to **Incoming Webhooks**
+5. Toggle **Activate Incoming Webhooks** ON
 6. Click **Add New Webhook to Workspace**
-7. Select your channel, click **Allow**
+7. Select your channel → **Allow**
 8. Copy the webhook URL
 
 ```bash
 export RALPH_SLACK_WEBHOOK_URL="https://hooks.slack.com/services/T00/B00/xxxx"
 ```
 
-**Optional settings:**
+**Optional:**
 
 ```bash
-export RALPH_SLACK_CHANNEL="#dev-alerts"      # Override channel
-export RALPH_SLACK_USERNAME="Ralph Bot"       # Custom bot name
-export RALPH_SLACK_ICON_EMOJI=":robot_face:"  # Custom icon
+export RALPH_SLACK_CHANNEL="#dev-alerts"
+export RALPH_SLACK_USERNAME="Ralph Bot"
+export RALPH_SLACK_ICON_EMOJI=":robot_face:"
 ```
 
 ---
 
 ### Discord
 
-**Time:** ~1 minute
-
 1. Open your Discord server
-2. Right-click target channel → **Edit Channel**
-3. Go to **Integrations** → **Webhooks**
-4. Click **New Webhook**
-5. Name it "Ralph", click **Copy Webhook URL**
+2. Right-click channel → **Edit Channel**
+3. **Integrations** → **Webhooks**
+4. **New Webhook** → Name it "Ralph"
+5. **Copy Webhook URL**
 
 ```bash
 export RALPH_DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/xxx/yyy"
 ```
 
-**Optional settings:**
+**Optional:**
 
 ```bash
-export RALPH_DISCORD_USERNAME="Ralph"         # Bot display name
-export RALPH_DISCORD_AVATAR_URL="https://..."  # Custom avatar
+export RALPH_DISCORD_USERNAME="Ralph"
+export RALPH_DISCORD_AVATAR_URL="https://example.com/avatar.png"
 ```
 
 ---
 
 ### Telegram
 
-**Time:** ~3 minutes
-
 **Step 1: Create a bot**
 
-1. Open Telegram, search for [@BotFather](https://t.me/BotFather)
+1. Open Telegram, find [@BotFather](https://t.me/BotFather)
 2. Send `/newbot`
 3. Follow prompts to name your bot
-4. Copy the bot token (format: `123456789:ABCdefGHI...`)
+4. Copy the token (format: `123456789:ABCdefGHI...`)
 
-**Step 2: Get your chat ID**
+**Step 2: Get chat ID**
 
 1. Start a chat with your new bot
-2. Send any message to it
-3. Open in browser: `https://api.telegram.org/bot<TOKEN>/getUpdates`
-4. Find `"chat":{"id":YOUR_CHAT_ID}` in the response
+2. Send any message
+3. Visit: `https://api.telegram.org/bot<TOKEN>/getUpdates`
+4. Find `"chat":{"id":YOUR_ID}` in the response
 
-> **Tip:** Group chat IDs are negative numbers (e.g., `-123456789`)
+{: .note }
+Group chat IDs are negative numbers (e.g., `-123456789`)
 
 ```bash
 export RALPH_TELEGRAM_BOT_TOKEN="123456789:ABCdefGHI..."
@@ -120,78 +134,73 @@ export RALPH_TELEGRAM_CHAT_ID="987654321"
 
 ### Custom Script
 
-For proprietary integrations—database bridges, internal APIs, SMS gateways, etc.
+For proprietary integrations—database bridges, internal APIs, SMS gateways.
 
-Your script receives the notification message as `$1`:
+Your script receives the message as `$1`:
 
 ```bash
 #!/bin/bash
 # my-notify.sh
 MESSAGE="$1"
 
-# Example: Post to internal API
+# Post to internal API
 curl -X POST -d "text=$MESSAGE" https://internal.company.com/notify
 
-# Example: Insert into database
+# Or insert into database
 docker exec db psql -c "INSERT INTO alerts (msg) VALUES ('$MESSAGE');"
-
-# Example: Send SMS via Twilio
-curl -X POST "https://api.twilio.com/..." -d "Body=$MESSAGE"
 ```
-
-Configure:
 
 ```bash
 export RALPH_CUSTOM_NOTIFY_SCRIPT="/path/to/my-notify.sh"
 ```
 
-**Requirements:**
-- Script must be executable (`chmod +x`)
-- Script receives message as first argument (`$1`)
-- Exit code is ignored (notifications don't block Ralph)
+{: .important }
+Script must be executable (`chmod +x`). Exit code is ignored.
 
 ---
 
 ## Configuration Reference
 
-| Variable | Platform | Required | Description |
-|----------|----------|----------|-------------|
-| `RALPH_SLACK_WEBHOOK_URL` | Slack | Yes | Webhook URL |
-| `RALPH_SLACK_CHANNEL` | Slack | No | Override channel |
-| `RALPH_SLACK_USERNAME` | Slack | No | Bot name (default: Ralph) |
-| `RALPH_SLACK_ICON_EMOJI` | Slack | No | Bot icon (default: :robot_face:) |
-| `RALPH_DISCORD_WEBHOOK_URL` | Discord | Yes | Webhook URL |
-| `RALPH_DISCORD_USERNAME` | Discord | No | Bot name (default: Ralph) |
-| `RALPH_DISCORD_AVATAR_URL` | Discord | No | Avatar image URL |
-| `RALPH_TELEGRAM_BOT_TOKEN` | Telegram | Yes | Bot token from @BotFather |
-| `RALPH_TELEGRAM_CHAT_ID` | Telegram | Yes | Target chat ID |
-| `RALPH_CUSTOM_NOTIFY_SCRIPT` | Custom | Yes | Path to script |
+| Variable | Platform | Description |
+|:---------|:---------|:------------|
+| `RALPH_SLACK_WEBHOOK_URL` | Slack | Webhook URL |
+| `RALPH_SLACK_CHANNEL` | Slack | Override channel |
+| `RALPH_SLACK_USERNAME` | Slack | Bot name |
+| `RALPH_SLACK_ICON_EMOJI` | Slack | Bot icon |
+| `RALPH_DISCORD_WEBHOOK_URL` | Discord | Webhook URL |
+| `RALPH_DISCORD_USERNAME` | Discord | Bot name |
+| `RALPH_DISCORD_AVATAR_URL` | Discord | Avatar image URL |
+| `RALPH_TELEGRAM_BOT_TOKEN` | Telegram | Bot token |
+| `RALPH_TELEGRAM_CHAT_ID` | Telegram | Target chat ID |
+| `RALPH_CUSTOM_NOTIFY_SCRIPT` | Custom | Path to script |
+
+---
 
 ## Persisting Configuration
 
-The setup wizard saves to `~/.ralph.env`. To load automatically:
+The wizard saves to `~/.ralph.env`. Load automatically:
 
 ```bash
-# Add to ~/.bashrc or ~/.zshrc
 echo 'source ~/.ralph.env' >> ~/.bashrc
 source ~/.bashrc
 ```
 
+---
+
 ## Multiple Platforms
 
-Configure as many platforms as you want—Ralph sends to **all** configured channels simultaneously.
+Configure as many as you want—Ralph sends to **all** configured channels:
 
 ```bash
-# All three will receive notifications
 export RALPH_SLACK_WEBHOOK_URL="https://..."
 export RALPH_DISCORD_WEBHOOK_URL="https://..."
 export RALPH_TELEGRAM_BOT_TOKEN="..."
 export RALPH_TELEGRAM_CHAT_ID="..."
 ```
 
-## Notification Format
+---
 
-Messages include context about the run:
+## Message Format
 
 ```
 🚀 Ralph Started
@@ -210,4 +219,5 @@ Repo: my-project
 
 ---
 
-Next: [How It Works](./HOW-IT-WORKS.md) | [Writing Plans](./WRITING-PLANS.md)
+[← Writing Plans]({{ site.baseurl }}/docs/WRITING-PLANS){: .btn .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[How It Works →]({{ site.baseurl }}/docs/HOW-IT-WORKS){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 }

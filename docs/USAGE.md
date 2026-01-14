@@ -1,31 +1,44 @@
+---
+layout: default
+title: Usage Guide
+nav_order: 2
+description: "Complete command reference for PortableRalph"
+permalink: /docs/USAGE
+---
+
 # Usage Guide
+{: .no_toc }
 
 Complete reference for using PortableRalph.
+{: .fs-6 .fw-300 }
 
-## Table of Contents
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+1. TOC
+{:toc}
+</details>
 
-- [Basic Usage](#basic-usage)
-- [Command Reference](#command-reference)
-- [Modes](#modes)
-- [Progress File](#progress-file)
-- [Exit Conditions](#exit-conditions)
-- [Tips & Best Practices](#tips--best-practices)
+---
 
 ## Basic Usage
 
 ```bash
-# From any repo directory
 ~/ralph/ralph.sh <plan-file> [mode] [max-iterations]
 ```
 
 Ralph reads your plan file and autonomously implements it, one task at a time.
+
+---
 
 ## Command Reference
 
 ### Arguments
 
 | Argument | Required | Default | Description |
-|----------|----------|---------|-------------|
+|:---------|:---------|:--------|:------------|
 | `plan-file` | Yes | - | Path to your plan/spec markdown file |
 | `mode` | No | `build` | `plan` or `build` |
 | `max-iterations` | No | unlimited | Maximum loop iterations |
@@ -33,7 +46,7 @@ Ralph reads your plan file and autonomously implements it, one task at a time.
 ### Flags
 
 | Flag | Description |
-|------|-------------|
+|:-----|:------------|
 | `--help`, `-h` | Show help message |
 | `--version`, `-v` | Show version |
 | `--test-notify` | Test notification configuration |
@@ -57,6 +70,8 @@ Ralph reads your plan file and autonomously implements it, one task at a time.
 ~/ralph/ralph.sh --test-notify
 ```
 
+---
+
 ## Modes
 
 ### Plan Mode
@@ -66,18 +81,20 @@ Ralph reads your plan file and autonomously implements it, one task at a time.
 ```
 
 In plan mode, Ralph:
+
 1. Reads and analyzes your plan file
 2. Explores the codebase to understand what exists
 3. Creates a prioritized task list
 4. Identifies dependencies between tasks
 5. Updates the progress file with the analysis
 
+{: .note }
+Plan mode does **not** make any code changes. Use it to review the approach before implementation.
+
 **Use plan mode when:**
 - Starting a complex feature
 - You want to review the approach before implementation
 - You need to understand the scope of work
-
-Plan mode does **not** make any code changes.
 
 ### Build Mode
 
@@ -86,6 +103,7 @@ Plan mode does **not** make any code changes.
 ```
 
 In build mode, Ralph:
+
 1. Reads the plan and progress file
 2. Picks ONE uncompleted task
 3. Searches codebase to verify it's not already done
@@ -98,6 +116,8 @@ In build mode, Ralph:
 - You have a clear plan ready
 - You want autonomous implementation
 - After reviewing a plan mode output
+
+---
 
 ## Progress File
 
@@ -135,7 +155,7 @@ Brief analysis of existing code vs what's needed.
 ### Status Values
 
 | Status | Meaning |
-|--------|---------|
+|:-------|:--------|
 | `PLANNING` | Plan mode is analyzing |
 | `IN_PROGRESS` | Build mode is implementing |
 | `RALPH_DONE` | All tasks complete, loop will exit |
@@ -143,25 +163,23 @@ Brief analysis of existing code vs what's needed.
 ### Task Markers
 
 | Marker | Meaning |
-|--------|---------|
+|:-------|:--------|
 | `[ ]` | Pending task |
 | `[x]` | Completed task |
+
+---
 
 ## Exit Conditions
 
 The Ralph loop exits when any of these occur:
 
-1. **`RALPH_DONE`** - All tasks complete
-   - Ralph changes status to `RALPH_DONE` when all tasks are marked `[x]`
-   - This is the normal successful exit
+| Condition | Description |
+|:----------|:------------|
+| `RALPH_DONE` | All tasks complete - normal successful exit |
+| Max iterations | Limit reached (if specified) |
+| `Ctrl+C` | Manual stop - progress is saved |
 
-2. **Max iterations reached**
-   - If you specified `max-iterations`, the loop stops after that many cycles
-   - Useful for limiting unattended runs
-
-3. **Manual stop (Ctrl+C)**
-   - You can stop Ralph anytime
-   - Progress is saved; you can resume by running the same command
+---
 
 ## Tips & Best Practices
 
@@ -187,6 +205,7 @@ Ralph runs in your terminal. Watch for:
 - Test failures
 - Going off-track
 
+{: .warning }
 Use `Ctrl+C` if Ralph goes in the wrong direction.
 
 ### Check Progress
@@ -196,9 +215,6 @@ Monitor what Ralph is doing:
 ```bash
 # In another terminal
 watch cat ./feature_PROGRESS.md
-
-# Or just check periodically
-cat ./feature_PROGRESS.md
 ```
 
 ### Use Max Iterations for Safety
@@ -212,16 +228,7 @@ For unattended runs, set a limit:
 
 ### Keep Plans Focused
 
-Smaller, focused plans work better than large monolithic ones:
-
-```bash
-# Good: focused plans
-~/ralph/ralph.sh ./plans/add-user-auth.md
-~/ralph/ralph.sh ./plans/add-email-notifications.md
-
-# Less ideal: one giant plan
-~/ralph/ralph.sh ./plans/complete-app-rewrite.md
-```
+Smaller, focused plans work better than large monolithic ones.
 
 ### Review Commits
 
@@ -229,14 +236,10 @@ Ralph commits after each task. Review the git log:
 
 ```bash
 git log --oneline -10
-```
-
-You can always revert if needed:
-
-```bash
-git revert HEAD  # Undo last commit
+git revert HEAD  # Undo last commit if needed
 ```
 
 ---
 
-Next: [Writing Effective Plans](./WRITING-PLANS.md) | [Notifications Setup](./NOTIFICATIONS.md)
+[Writing Plans →]({{ site.baseurl }}/docs/WRITING-PLANS){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[Notifications →]({{ site.baseurl }}/docs/NOTIFICATIONS){: .btn .fs-5 .mb-4 .mb-md-0 }
