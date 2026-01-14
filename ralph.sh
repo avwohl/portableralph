@@ -8,7 +8,8 @@
 #   ~/ralph/ralph.sh ./my-feature-plan.md build 20  # Build mode, max 20 iterations
 #
 # Exit conditions:
-#   - "RALPH_DONE" appears in progress file
+#   - Plan mode: Exits after 1 iteration (planning complete)
+#   - Build mode: "RALPH_DONE" appears in progress file
 #   - Max iterations reached (if specified)
 #   - Ctrl+C
 #
@@ -60,17 +61,17 @@ usage() {
     echo "  max-iterations  Maximum loop iterations (default: unlimited)"
     echo ""
     echo -e "${YELLOW}Modes:${NC}"
-    echo "  plan   Analyze codebase, create task list in progress file"
+    echo "  plan   Analyze codebase, create task list (runs once, then exits)"
     echo "  build  Implement tasks one at a time until RALPH_DONE"
     echo ""
     echo -e "${YELLOW}Examples:${NC}"
     echo "  ~/ralph/ralph.sh ./feature.md              # Build until done"
-    echo "  ~/ralph/ralph.sh ./feature.md plan         # Plan only"
+    echo "  ~/ralph/ralph.sh ./feature.md plan         # Plan only (creates task list, exits)"
     echo "  ~/ralph/ralph.sh ./feature.md build 20     # Build, max 20 iterations"
-    echo "  ~/ralph/ralph.sh ./feature.md plan 5       # Plan, max 5 iterations"
     echo ""
     echo -e "${YELLOW}Exit Conditions:${NC}"
-    echo "  - RALPH_DONE appears in <plan-name>_PROGRESS.md"
+    echo "  - Plan mode: Exits after 1 iteration when task list is created"
+    echo "  - Build mode: RALPH_DONE appears in <plan-name>_PROGRESS.md"
     echo "  - Max iterations reached (if specified)"
     echo "  - Ctrl+C"
     echo ""
@@ -171,7 +172,12 @@ fi
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "${YELLOW}Exit conditions:${NC}"
-echo "  - Add 'RALPH_DONE' to $PROGRESS_FILE when complete"
+if [ "$MODE" = "plan" ]; then
+    echo "  - Planning completes when task list is created (Status: IN_PROGRESS)"
+    echo "  - Plan mode runs once then exits automatically"
+else
+    echo "  - Add 'RALPH_DONE' to $PROGRESS_FILE when all tasks complete"
+fi
 echo "  - Press Ctrl+C to stop manually"
 echo ""
 
@@ -245,6 +251,18 @@ while true; do
 
     echo ""
     echo -e "${GREEN}Iteration $ITERATION complete${NC}"
+
+    # Plan mode: exit after one iteration
+    if [ "$MODE" = "plan" ]; then
+        echo ""
+        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${GREEN}  Planning complete! Task list created in $PROGRESS_FILE${NC}"
+        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo ""
+        echo -e "Next step: Run ${YELLOW}~/ralph/ralph.sh $PLAN_FILE build${NC} to implement tasks"
+        notify ":clipboard: *Ralph Planning Complete!*\n\`\`\`Plan: $PLAN_BASENAME\nTask list created in: $PROGRESS_FILE\nRepo: $REPO_NAME\`\`\`" ":clipboard:"
+        break
+    fi
 
     # Send iteration notification (configurable frequency via RALPH_NOTIFY_FREQUENCY, default: every 5 iterations)
     NOTIFY_FREQ="${RALPH_NOTIFY_FREQUENCY:-5}"
