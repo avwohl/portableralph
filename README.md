@@ -8,7 +8,7 @@ Based on [The Ralph Playbook](https://github.com/ghuntley/how-to-ralph-wiggum) m
 
 ```bash
 # Install (one time)
-git clone https://github.com/YOUR_USERNAME/portableralph.git ~/ralph
+git clone https://github.com/aaron777collins/portableralph.git ~/ralph
 chmod +x ~/ralph/ralph.sh
 
 # Use (from any repo)
@@ -60,7 +60,7 @@ Ralph is an AI development loop that:
 ## Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/portableralph.git ~/ralph
+git clone https://github.com/aaron777collins/portableralph.git ~/ralph
 chmod +x ~/ralph/ralph.sh
 ```
 
