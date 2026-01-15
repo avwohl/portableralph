@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#0a0a0a"/>
+  <text x="64" y="92" text-anchor="middle" font-family="monospace" font-size="96" font-weight="bold" fill="#10b981">R</text>
+  <!-- Underscore cursor -->
+  <rect x="78" y="94" width="24" height="6" fill="#10b981"/>
+</svg>
