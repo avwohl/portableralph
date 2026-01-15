@@ -91,13 +91,13 @@ ralph --version
 ### Set Up Notifications (Optional)
 
 ```bash
-~/ralph/setup-notifications.sh
+ralph notify setup
 ```
 
 ### Test Notifications
 
 ```bash
-ralph --test-notify
+ralph notify test
 ```
 
 ## Upgrading

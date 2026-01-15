@@ -225,8 +225,9 @@ ralph ./plan.md build
 # Implement with a safety limit
 ralph ./plan.md build 20
 
-# Test your notification setup
-ralph --test-notify
+# Notification commands
+ralph notify setup    # Configure notifications
+ralph notify test     # Send a test notification
 ```
 
 ### Flags
@@ -235,7 +236,6 @@ ralph --test-notify
 |:-----|:------------|
 | `--help`, `-h` | Show help message |
 | `--version`, `-v` | Show version |
-| `--test-notify` | Send a test notification |
 
 ---
 

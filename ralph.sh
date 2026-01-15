@@ -52,6 +52,7 @@ usage() {
     echo ""
     echo -e "${YELLOW}Usage:${NC}"
     echo "  ralph <plan-file> [mode] [max-iterations]"
+    echo "  ralph notify <setup|test>"
     echo "  ralph --help | -h"
     echo "  ralph --version | -v"
     echo ""
@@ -82,12 +83,9 @@ usage() {
     echo "  This is the only artifact left in your repo"
     echo ""
     echo -e "${YELLOW}Notifications (optional):${NC}"
-    echo "  Supports Slack, Discord, and Telegram"
-    echo "  Run: ~/ralph/setup-notifications.sh to configure"
-    echo "  Or set environment variables (see .env.example)"
-    echo ""
-    echo -e "${YELLOW}Test Notifications:${NC}"
-    echo "  ralph --test-notify"
+    echo "  Supports Slack, Discord, Telegram, and custom scripts"
+    echo "  ralph notify setup    Configure notification platforms"
+    echo "  ralph notify test     Send a test notification"
     echo ""
     echo "More info: https://github.com/aaron777collins/portableralph"
     exit 0
@@ -115,6 +113,31 @@ fi
 if [ "$1" = "--test-notify" ] || [ "$1" = "--test-notifications" ]; then
     "$RALPH_DIR/notify.sh" --test
     exit 0
+fi
+
+# Handle notify subcommand
+if [ "$1" = "notify" ]; then
+    case "${2:-}" in
+        setup)
+            exec "$RALPH_DIR/setup-notifications.sh"
+            ;;
+        test)
+            exec "$RALPH_DIR/notify.sh" --test
+            ;;
+        "")
+            echo -e "${YELLOW}Usage:${NC} ralph notify <command>"
+            echo ""
+            echo -e "${YELLOW}Commands:${NC}"
+            echo "  setup    Configure Slack, Discord, Telegram, or custom notifications"
+            echo "  test     Send a test notification to all configured platforms"
+            exit 1
+            ;;
+        *)
+            echo -e "${RED}Unknown notify command: $2${NC}"
+            echo "Run 'ralph notify' for available commands."
+            exit 1
+            ;;
+    esac
 fi
 
 PLAN_FILE="$1"
@@ -169,7 +192,7 @@ if notifications_enabled; then
     [ -n "${RALPH_CUSTOM_NOTIFY_SCRIPT:-}" ] && PLATFORMS="${PLATFORMS}Custom "
     echo -e "  Notify:    ${GREEN}${PLATFORMS}${NC}"
 else
-    echo -e "  Notify:    ${YELLOW}disabled${NC} (run ~/ralph/setup-notifications.sh)"
+    echo -e "  Notify:    ${YELLOW}disabled${NC} (run 'ralph notify setup')"
 fi
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""

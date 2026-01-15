@@ -275,7 +275,7 @@ if $TEST_MODE; then
         echo "Test complete! Check your notification channels."
     else
         echo "No notifications sent. Configure at least one platform."
-        echo "Run: ~/ralph/setup-notifications.sh"
+        echo "Run: ralph notify setup"
     fi
 fi
 

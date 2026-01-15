@@ -5,7 +5,7 @@ An autonomous AI development loop that works in **any repo**.
 [**View Documentation →**](https://aaron777collins.github.io/portableralph/)
 
 ```bash
-~/ralph/ralph.sh ./feature-plan.md
+ralph ./feature-plan.md
 ```
 
 Ralph reads your plan, breaks it into tasks, and implements them one by one until done.
@@ -25,7 +25,7 @@ chmod +x ~/ralph/*.sh
 
 **Run:**
 ```bash
-~/ralph/ralph.sh ./my-plan.md
+ralph ./my-plan.md
 ```
 
 ## How It Works
@@ -49,7 +49,8 @@ chmod +x ~/ralph/*.sh
 ## Usage
 
 ```bash
-~/ralph/ralph.sh <plan-file> [mode] [max-iterations]
+ralph <plan-file> [mode] [max-iterations]
+ralph notify <setup|test>
 ```
 
 | Mode | Description |
@@ -59,9 +60,9 @@ chmod +x ~/ralph/*.sh
 
 ```bash
 # Examples
-~/ralph/ralph.sh ./feature.md           # Build until done
-~/ralph/ralph.sh ./feature.md plan      # Plan only (creates task list, exits)
-~/ralph/ralph.sh ./feature.md build 20  # Build, max 20 iterations
+ralph ./feature.md           # Build until done
+ralph ./feature.md plan      # Plan only (creates task list, exits)
+ralph ./feature.md build 20  # Build, max 20 iterations
 ```
 
 ## Plan File Format
@@ -89,8 +90,8 @@ See [Writing Effective Plans](https://aaron777collins.github.io/portableralph/wr
 Get notified on Slack, Discord, Telegram, or custom integrations:
 
 ```bash
-~/ralph/setup-notifications.sh  # Interactive setup
-~/ralph/ralph.sh --test-notify   # Test your config
+ralph notify setup  # Interactive setup wizard
+ralph notify test   # Test your config
 ```
 
 See [Notifications Guide](https://aaron777collins.github.io/portableralph/notifications/) for setup details.
@@ -129,10 +130,10 @@ Invoke Ralph from another AI agent:
 
 ```bash
 # Plan first (analyzes codebase, creates task list, exits after 1 iteration)
-~/ralph/ralph.sh /absolute/path/to/plan.md plan
+ralph /absolute/path/to/plan.md plan
 
 # Then build (implements tasks one by one until completion)
-~/ralph/ralph.sh /absolute/path/to/plan.md build
+ralph /absolute/path/to/plan.md build
 ```
 
 **Important:**

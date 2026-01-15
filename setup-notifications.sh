@@ -2,7 +2,7 @@
 # setup-notifications.sh - Interactive setup wizard for Ralph notifications
 # Supports: Slack, Discord, Telegram, and Custom scripts
 #
-# Usage: ~/ralph/setup-notifications.sh
+# Usage: ralph notify setup (or ~/ralph/setup-notifications.sh)
 #
 # This wizard will:
 # 1. Ask which platforms you want to configure
@@ -41,7 +41,7 @@ if [ -f "$CONFIG_FILE" ]; then
         echo "Keeping existing configuration."
         echo ""
         echo "To test notifications, run:"
-        echo -e "  ${CYAN}ralph --test-notify${NC}"
+        echo -e "  ${CYAN}ralph notify test${NC}"
         exit 0
     fi
     echo ""
@@ -313,5 +313,5 @@ echo -e "  ${CYAN}echo 'source ~/.ralph.env' >> ~/.bashrc${NC}"
 echo ""
 echo "Test notifications anytime with:"
 echo ""
-echo -e "  ${CYAN}ralph --test-notify${NC}"
+echo -e "  ${CYAN}ralph notify test${NC}"
 echo ""

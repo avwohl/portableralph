@@ -25,13 +25,13 @@ Notifications fire when:
 Run the interactive wizard:
 
 ```bash
-~/ralph/setup-notifications.sh
+ralph notify setup
 ```
 
 Test your configuration:
 
 ```bash
-~/ralph/ralph.sh --test-notify
+ralph notify test
 ```
 
 ## Platform Setup

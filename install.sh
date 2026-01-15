@@ -402,7 +402,7 @@ setup_notifications() {
     echo ""
 
     if ! prompt_yn "Would you like to set up notifications?"; then
-        info "Skipping notification setup. Run ${CYAN}~/ralph/setup-notifications.sh${NC} later."
+        info "Skipping notification setup. Run ${CYAN}ralph notify setup${NC} later."
         return
     fi
 

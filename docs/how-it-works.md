@@ -41,7 +41,7 @@ Technical deep-dive into Ralph's architecture and execution model.
 ### Initialization
 
 ```bash
-~/ralph/ralph.sh ./feature.md build
+ralph ./feature.md build
 ```
 
 1. Validate plan file exists
