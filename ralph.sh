@@ -19,6 +19,13 @@ set -euo pipefail
 
 RALPH_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Colors (defined early for use in validation messages)
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
 # Validate config file syntax before sourcing
 validate_config() {
     local config_file="$1"
@@ -34,13 +41,6 @@ validate_config() {
 if [ -f "$HOME/.ralph.env" ] && validate_config "$HOME/.ralph.env"; then
     source "$HOME/.ralph.env"
 fi
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
 
 VERSION="1.5.0"
 
