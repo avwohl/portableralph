@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PortableRalph Icon Preview</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+    h1 { margin: 0 0 20px; }
+    .row {
+      display: flex;
+      gap: 30px;
+      align-items: end;
+    }
+    .icon-box {
+      text-align: center;
+    }
+    .icon-box span {
+      display: block;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    img {
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <h1>Option 1: icon.svg</h1>
+    <div class="row">
+      <div class="icon-box"><img src="icon.svg" width="128" height="128"><span>128px</span></div>
+      <div class="icon-box"><img src="icon.svg" width="64" height="64"><span>64px</span></div>
+      <div class="icon-box"><img src="icon.svg" width="32" height="32"><span>32px</span></div>
+      <div class="icon-box"><img src="icon.svg" width="16" height="16"><span>16px</span></div>
+    </div>
+  </div>
+
+  <div>
+    <h1>Option 2: favicon.svg (optimized for small)</h1>
+    <div class="row">
+      <div class="icon-box"><img src="favicon.svg" width="128" height="128"><span>128px</span></div>
+      <div class="icon-box"><img src="favicon.svg" width="64" height="64"><span>64px</span></div>
+      <div class="icon-box"><img src="favicon.svg" width="32" height="32"><span>32px</span></div>
+      <div class="icon-box"><img src="favicon.svg" width="16" height="16"><span>16px</span></div>
+    </div>
+  </div>
+
+  <div>
+    <h1>Option 3: icon-alt.svg (loop + R)</h1>
+    <div class="row">
+      <div class="icon-box"><img src="icon-alt.svg" width="128" height="128"><span>128px</span></div>
+      <div class="icon-box"><img src="icon-alt.svg" width="64" height="64"><span>64px</span></div>
+      <div class="icon-box"><img src="icon-alt.svg" width="32" height="32"><span>32px</span></div>
+      <div class="icon-box"><img src="icon-alt.svg" width="16" height="16"><span>16px</span></div>
+    </div>
+  </div>
+</body>
+</html>
