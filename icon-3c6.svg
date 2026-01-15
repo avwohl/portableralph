@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect width="128" height="128" fill="#030712"/>
-  <rect x="40" y="48" width="56" height="56" rx="8" stroke="#c4b5fd" stroke-width="1" fill="none" opacity="0.2"/>
-  <rect x="32" y="38" width="56" height="56" rx="8" stroke="#c4b5fd" stroke-width="1" fill="none" opacity="0.5"/>
-  <rect x="24" y="28" width="56" height="56" rx="8" fill="#8b5cf6"/>
-  <text x="52" y="66" font-family="system-ui" font-size="38" font-weight="900" fill="#fff">R</text>
-</svg>

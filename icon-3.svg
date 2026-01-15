@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Stacked cards/iterations -->
-  <rect width="128" height="128" fill="#0f172a"/>
-  <rect x="28" y="36" width="72" height="72" rx="8" fill="#334155"/>
-  <rect x="22" y="28" width="72" height="72" rx="8" fill="#475569"/>
-  <rect x="16" y="20" width="72" height="72" rx="8" fill="#7c3aed"/>
-  <text x="52" y="66" font-family="system-ui" font-size="40" font-weight="800" fill="#fff">R</text>
-</svg>

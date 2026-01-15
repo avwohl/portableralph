@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Abstract loop/cycle -->
-  <rect width="128" height="128" fill="#1e1b4b"/>
-  <path d="M32 64 Q32 32 64 32 Q96 32 96 64 Q96 96 64 96 Q48 96 48 80 Q48 64 64 64 Q80 64 80 48 Q80 32 64 48"
-        stroke="#a78bfa" stroke-width="8" stroke-linecap="round" fill="none"/>
-</svg>
