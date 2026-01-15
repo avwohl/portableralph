@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#000"/>
+  <rect x="30" y="30" width="94" height="94" rx="4" fill="#18122b"/>
+  <rect x="18" y="18" width="94" height="94" rx="4" fill="#3b1d6e"/>
+  <rect x="6" y="6" width="94" height="94" rx="4" fill="#6d28d9"/>
+  <text x="53" y="53" font-family="Courier, monospace" font-size="62" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="central">R</text>
+</svg>
