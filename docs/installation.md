@@ -102,11 +102,35 @@ ralph notify test
 
 ## Upgrading
 
-To upgrade to the latest version:
+Ralph has a built-in self-update system for easy upgrades:
 
 ```bash
-cd ~/ralph && git pull
+# Update to the latest version
+ralph update
+
+# Check for updates without installing
+ralph update --check
+
+# List all available versions
+ralph update --list
+
+# Install a specific version
+ralph update 1.5.0
 ```
+
+### Rollback
+
+If an update causes issues, you can rollback to the previous version:
+
+```bash
+ralph rollback
+```
+
+The previous version is automatically backed up before each update to `~/.ralph_backup/`.
+
+### Version History
+
+Your update history is tracked in `~/.ralph_version_history`.
 
 ## Uninstalling
 

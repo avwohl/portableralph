@@ -244,6 +244,50 @@ ralph notify test     # Send a test notification
 
 ---
 
+## :arrows_counterclockwise: Updating Ralph
+
+Ralph includes a self-update system for easy version management.
+
+### Update Commands
+
+```bash
+# Update to the latest version
+ralph update
+
+# Check if updates are available (no changes made)
+ralph update --check
+
+# List all available versions
+ralph update --list
+
+# Install a specific version
+ralph update 1.5.0
+ralph update v1.5.0    # 'v' prefix works too
+
+# Rollback to previous version
+ralph rollback
+```
+
+### How Updates Work
+
+| Action | What Happens |
+|:-------|:-------------|
+| `ralph update` | Downloads latest version, backs up current, installs new |
+| `ralph update --check` | Queries GitHub API, compares versions, reports status |
+| `ralph update <version>` | Installs specific version (must exist on GitHub) |
+| `ralph rollback` | Restores from `~/.ralph_backup/` |
+
+### Version Management
+
+- **Version History**: Stored in `~/.ralph_version_history`
+- **Backup Location**: Previous version saved to `~/.ralph_backup/`
+- **Rollback**: Only available after an update (restores the backup)
+
+!!! tip "Safe Updates"
+    Ralph automatically backs up your current installation before any update. If something goes wrong, use `ralph rollback` to restore.
+
+---
+
 ## :gear: Configuration
 
 ### Auto-Commit

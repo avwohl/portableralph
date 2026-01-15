@@ -26,7 +26,7 @@ set -euo pipefail
 # CONFIGURATION
 # ============================================
 
-VERSION="1.5.0"
+VERSION="1.6.0"
 REPO_URL="https://github.com/aaron777collins/portableralph.git"
 DEFAULT_INSTALL_DIR="$HOME/ralph"
 

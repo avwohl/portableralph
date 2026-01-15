@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          # Extract changelog section for this version
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          CHANGELOG=$(awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
+
+          # Handle multiline output
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: PortableRalph v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## What's Changed
+
+            ${{ steps.changelog.outputs.CHANGELOG }}
+
+            ## Installation
+
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/aaron777collins/portableralph/master/install.sh | bash
+            ```
+
+            ## Update
+
+            If you already have Ralph installed:
+            ```bash
+            ralph update
+            ```
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify release
+        run: |
+          echo "Release v${{ steps.get_version.outputs.VERSION }} created successfully!"

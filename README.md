@@ -107,6 +107,27 @@ See [Notifications Guide](https://aaron777collins.github.io/portableralph/notifi
 | [Notifications](https://aaron777collins.github.io/portableralph/notifications/) | Slack, Discord, Telegram setup |
 | [How It Works](https://aaron777collins.github.io/portableralph/how-it-works/) | Technical architecture |
 
+## Updating
+
+Ralph includes a self-update system:
+
+```bash
+# Update to latest version
+ralph update
+
+# Check for updates
+ralph update --check
+
+# List all versions
+ralph update --list
+
+# Install specific version
+ralph update 1.5.0
+
+# Rollback to previous version
+ralph rollback
+```
+
 ## Requirements
 
 - [Claude Code CLI](https://platform.claude.com/docs/en/get-started) installed and authenticated
@@ -118,10 +139,12 @@ See [Notifications Guide](https://aaron777collins.github.io/portableralph/notifi
 ```
 ~/ralph/
 ├── ralph.sh               # Main loop
+├── update.sh              # Self-update system
 ├── notify.sh              # Notification dispatcher
 ├── setup-notifications.sh # Setup wizard
 ├── PROMPT_plan.md         # Plan mode instructions
 ├── PROMPT_build.md        # Build mode instructions
+├── CHANGELOG.md           # Version history
 ├── .env.example           # Config template
 └── docs/                  # Documentation
 ```

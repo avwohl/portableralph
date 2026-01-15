@@ -42,7 +42,7 @@ if [ -f "$HOME/.ralph.env" ] && validate_config "$HOME/.ralph.env"; then
     source "$HOME/.ralph.env"
 fi
 
-VERSION="1.5.0"
+VERSION="1.6.0"
 
 # Auto-commit setting (default: true)
 # Can be disabled via: ralph config commit off
@@ -83,6 +83,8 @@ usage() {
     echo ""
     echo -e "${YELLOW}Usage:${NC}"
     echo "  ralph <plan-file> [mode] [max-iterations]"
+    echo "  ralph update [--check|--list|<version>]"
+    echo "  ralph rollback"
     echo "  ralph config <setting>"
     echo "  ralph notify <setup|test>"
     echo "  ralph --help | -h"
@@ -113,6 +115,13 @@ usage() {
     echo -e "${YELLOW}Progress File:${NC}"
     echo "  Created as <plan-name>_PROGRESS.md in current directory"
     echo "  This is the only artifact left in your repo"
+    echo ""
+    echo -e "${YELLOW}Updates:${NC}"
+    echo "  ralph update              Update to latest version"
+    echo "  ralph update --check      Check for updates without installing"
+    echo "  ralph update --list       List all available versions"
+    echo "  ralph update <version>    Install specific version (e.g., 1.4.0)"
+    echo "  ralph rollback            Rollback to previous version"
     echo ""
     echo -e "${YELLOW}Configuration:${NC}"
     echo "  ralph config commit on      Enable auto-commit (default)"
@@ -153,6 +162,16 @@ fi
 if [ "$1" = "--test-notify" ] || [ "$1" = "--test-notifications" ]; then
     "$RALPH_DIR/notify.sh" --test
     exit 0
+fi
+
+# Handle update subcommand
+if [ "$1" = "update" ]; then
+    exec "$RALPH_DIR/update.sh" "${@:2}"
+fi
+
+# Handle rollback subcommand
+if [ "$1" = "rollback" ]; then
+    exec "$RALPH_DIR/update.sh" --rollback
 fi
 
 # Handle notify subcommand
