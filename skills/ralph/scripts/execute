@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+#
+# AICEO Ralph - Execution Script
+# Routes natural language requests to ralph command
+#
+
+set -euo pipefail
+
+# Get task from command line arguments
+TASK="$*"
+TASK_LOWER=$(echo "$TASK" | tr '[:upper:]' '[:lower:]')
+
+# Show usage
+show_usage() {
+    echo "Ralph Skill"
+    echo ""
+    echo "Commands:"
+    echo "  plan <plan-file>              - Analyze and create task list"
+    echo "  build <plan-file>             - Build until completion"
+    echo "  build <plan-file> <max-iter>  - Build with iteration limit"
+    echo "  status                        - Show version info"
+    echo "  test notifications            - Test notification setup"
+    echo "  help                          - Show this help"
+    echo ""
+    echo "Examples:"
+    echo "  plan ./plans/feature.md"
+    echo "  build ./plans/feature.md"
+    echo "  build ./plans/feature.md 20"
+}
+
+# Find ralph - check command first, then common install location
+RALPH=""
+if command -v ralph &> /dev/null; then
+    RALPH="ralph"
+elif [[ -x "${HOME}/ralph/ralph.sh" ]]; then
+    RALPH="${HOME}/ralph/ralph.sh"
+else
+    echo "Error: ralph not found"
+    echo "Install: https://github.com/jakobpotosme/ralph"
+    exit 1
+fi
+
+# Route based on task
+case "$TASK_LOWER" in
+    help|--help|-h|"show help"|"usage")
+        show_usage
+        ;;
+
+    status|version|--version|-v|"show status"|"ralph status")
+        "$RALPH" --version
+        ;;
+
+    "test notifications"|"test notify"|--test-notify|--test-notifications)
+        "$RALPH" --test-notify
+        ;;
+
+    plan\ *)
+        # Extract plan file from "plan <file>"
+        PLAN_FILE=$(echo "$TASK" | sed 's/^[Pp]lan[[:space:]]*//')
+        if [[ -z "$PLAN_FILE" ]]; then
+            echo "Error: Please provide a plan file"
+            echo "Usage: plan <plan-file>"
+            exit 1
+        fi
+        echo "Starting Ralph in PLAN mode for: $PLAN_FILE"
+        "$RALPH" "$PLAN_FILE" plan
+        ;;
+
+    build\ *)
+        # Extract plan file and optional max iterations from "build <file> [max-iter]"
+        ARGS=$(echo "$TASK" | sed 's/^[Bb]uild[[:space:]]*//')
+        PLAN_FILE=$(echo "$ARGS" | awk '{print $1}')
+        MAX_ITER=$(echo "$ARGS" | awk '{print $2}')
+
+        if [[ -z "$PLAN_FILE" ]]; then
+            echo "Error: Please provide a plan file"
+            echo "Usage: build <plan-file> [max-iterations]"
+            exit 1
+        fi
+
+        echo "Starting Ralph in BUILD mode for: $PLAN_FILE"
+        if [[ -n "$MAX_ITER" ]]; then
+            echo "Max iterations: $MAX_ITER"
+            "$RALPH" "$PLAN_FILE" build "$MAX_ITER"
+        else
+            "$RALPH" "$PLAN_FILE" build
+        fi
+        ;;
+
+    *)
+        # Check if it looks like a file path (might be shorthand for build)
+        if [[ "$TASK" =~ \.(md|txt|json)$ ]] || [[ -f "$TASK" ]]; then
+            echo "Starting Ralph in BUILD mode for: $TASK"
+            "$RALPH" "$TASK" build
+        else
+            echo "Error: Unknown command: $TASK"
+            echo ""
+            show_usage
+            exit 1
+        fi
+        ;;
+esac
