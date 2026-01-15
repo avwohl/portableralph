@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Play button / automation -->
+  <circle cx="64" cy="64" r="60" fill="#7c3aed"/>
+  <polygon points="52,40 92,64 52,88" fill="#fff"/>
+</svg>

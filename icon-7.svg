@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Diagonal stripes modern -->
+  <defs>
+    <clipPath id="clip">
+      <rect width="128" height="128" rx="24"/>
+    </clipPath>
+  </defs>
+  <rect width="128" height="128" rx="24" fill="#7c3aed"/>
+  <g clip-path="url(#clip)">
+    <path d="M-20 128 L108 0 L128 0 L128 20 L0 148 Z" fill="#8b5cf6"/>
+    <path d="M20 128 L148 0 L168 0 L168 20 L40 148 Z" fill="#9333ea"/>
+  </g>
+  <text x="64" y="84" text-anchor="middle" font-family="system-ui" font-size="56" font-weight="900" fill="#fff">R</text>
+</svg>
