@@ -1,0 +1,64 @@
+================================================================================
+RALPH ERROR ALERT
+================================================================================
+
+❌ ERROR DETECTED
+⚠️  An error occurred during execution
+
+--------------------------------------------------------------------------------
+ERROR MESSAGE
+--------------------------------------------------------------------------------
+
+{{MESSAGE}}
+
+{{#HAS_ERROR_DETAILS}}
+--------------------------------------------------------------------------------
+ERROR DETAILS
+--------------------------------------------------------------------------------
+
+{{ERROR_DETAILS}}
+
+{{/HAS_ERROR_DETAILS}}
+{{#HAS_STACK_TRACE}}
+--------------------------------------------------------------------------------
+STACK TRACE
+--------------------------------------------------------------------------------
+
+{{STACK_TRACE}}
+
+{{/HAS_STACK_TRACE}}
+{{#HAS_CONTEXT}}
+--------------------------------------------------------------------------------
+CONTEXT INFORMATION
+--------------------------------------------------------------------------------
+
+{{#HAS_ITERATION}}Iteration: {{ITERATION}} / {{MAX_ITERATIONS}}{{/HAS_ITERATION}}
+{{#HAS_TASK}}Current Task: {{CURRENT_TASK}}{{/HAS_TASK}}
+{{#HAS_FILE}}File: {{ERROR_FILE}}{{/HAS_FILE}}
+
+{{/HAS_CONTEXT}}
+--------------------------------------------------------------------------------
+SUGGESTED ACTIONS
+--------------------------------------------------------------------------------
+
+• Check the error details and stack trace above
+• Review the progress file for the current state
+• Verify API credentials and rate limits
+• Check system logs for additional context
+• Restart Ralph if the error is transient
+
+--------------------------------------------------------------------------------
+DETAILS
+--------------------------------------------------------------------------------
+
+Timestamp: {{TIMESTAMP}}
+Hostname: {{HOSTNAME}}
+{{#HAS_PROJECT}}Project: {{PROJECT}}{{/HAS_PROJECT}}
+Severity: {{SEVERITY}}
+
+================================================================================
+
+This is an automated error notification from Ralph.
+Learn more at https://github.com/aaron777collins/portableralph
+
+================================================================================

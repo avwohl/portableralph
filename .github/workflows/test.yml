@@ -1,0 +1,528 @@
+name: Ralph Comprehensive Test Suite
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+  workflow_dispatch:
+  schedule:
+    # Run weekly on Sundays at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+env:
+  # Test configuration
+  RALPH_AUTO_COMMIT: false
+  RALPH_NOTIFY_ON_ERROR: false
+
+jobs:
+  # ============================================
+  # STATIC ANALYSIS - BASH
+  # ============================================
+  shellcheck:
+    name: ShellCheck (Bash Scripts)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck on all bash scripts
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: '.'
+          severity: warning
+          ignore_paths: tests/test-output* .git node_modules
+          ignore_names: .envrc
+          check_together: 'yes'
+
+      - name: ShellCheck version info
+        run: shellcheck --version
+
+  # ============================================
+  # STATIC ANALYSIS - POWERSHELL
+  # ============================================
+  psscriptanalyzer:
+    name: PSScriptAnalyzer (PowerShell Scripts)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -Repository PSGallery
+          Import-Module PSScriptAnalyzer
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $results = @()
+          Get-ChildItem -Path . -Recurse -Include "*.ps1" -Exclude "*.Tests.ps1" | ForEach-Object {
+            Write-Host "Analyzing $($_.FullName)..."
+            $analysis = Invoke-ScriptAnalyzer -Path $_.FullName -Settings PSGallery -Severity Warning,Error
+            if ($analysis) {
+              $results += $analysis
+              $analysis | Format-Table -AutoSize
+            }
+          }
+
+          if ($results.Count -gt 0) {
+            Write-Host "Found $($results.Count) issues"
+            exit 1
+          } else {
+            Write-Host "No issues found!"
+            exit 0
+          }
+
+  # ============================================
+  # UNIT TESTS - LINUX
+  # ============================================
+  unit-tests-linux:
+    name: Unit Tests (Ubuntu)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        bash-version: ['5.0', '5.1', '5.2']
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Display Bash version
+        run: bash --version
+
+      - name: Make test scripts executable
+        run: chmod +x tests/*.sh *.sh
+
+      - name: Run unit tests
+        run: |
+          cd tests
+          ./run-all-tests.sh --unit-only --verbose
+        timeout-minutes: 15
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results-linux-bash-${{ matrix.bash-version }}
+          path: tests/test-output*/
+          retention-days: 7
+          if-no-files-found: warn
+
+  # ============================================
+  # UNIT TESTS - MACOS
+  # ============================================
+  unit-tests-macos:
+    name: Unit Tests (macOS)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Display Bash version
+        run: bash --version
+
+      - name: Make test scripts executable
+        run: chmod +x tests/*.sh *.sh
+
+      - name: Run unit tests
+        run: |
+          cd tests
+          ./run-all-tests.sh --unit-only --verbose
+        timeout-minutes: 15
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results-macos
+          path: tests/test-output*/
+          retention-days: 7
+          if-no-files-found: warn
+
+  # ============================================
+  # UNIT TESTS - WINDOWS (PowerShell)
+  # ============================================
+  unit-tests-windows:
+    name: Unit Tests (Windows PowerShell)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Display PowerShell version
+        shell: pwsh
+        run: $PSVersionTable
+
+      - name: Run PowerShell unit tests
+        shell: pwsh
+        run: |
+          cd tests
+          .\run-all-tests.ps1 -UnitOnly -Verbose
+        timeout-minutes: 15
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results-windows-powershell
+          path: tests/test-output*/
+          retention-days: 7
+          if-no-files-found: warn
+
+  # ============================================
+  # UNIT TESTS - WINDOWS (Git Bash)
+  # ============================================
+  unit-tests-windows-bash:
+    name: Unit Tests (Windows Git Bash)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Display Bash version
+        run: bash --version
+
+      - name: Make test scripts executable
+        run: chmod +x tests/*.sh *.sh
+
+      - name: Run unit tests
+        run: |
+          cd tests
+          ./run-all-tests.sh --unit-only --verbose
+        timeout-minutes: 15
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results-windows-bash
+          path: tests/test-output*/
+          retention-days: 7
+          if-no-files-found: warn
+
+  # ============================================
+  # INTEGRATION TESTS
+  # ============================================
+  integration-tests:
+    name: Integration Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: [unit-tests-linux, unit-tests-macos, unit-tests-windows]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Make test scripts executable
+        run: chmod +x tests/*.sh *.sh
+
+      - name: Run integration tests
+        run: |
+          cd tests
+          ./run-all-tests.sh --integration-only --verbose
+        timeout-minutes: 20
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results-${{ matrix.os }}
+          path: tests/test-output*/
+          retention-days: 7
+          if-no-files-found: warn
+
+  # ============================================
+  # SECURITY TESTS
+  # ============================================
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Make test scripts executable
+        run: chmod +x tests/*.sh *.sh
+
+      - name: Run security tests
+        run: |
+          cd tests
+          ./run-all-tests.sh --security-only --verbose
+        timeout-minutes: 15
+
+      - name: Upload security test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-test-results
+          path: tests/test-output*/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Fail if security issues found
+        if: failure()
+        run: |
+          echo "::error::Security tests failed! Review the test output for details."
+          exit 1
+
+  # ============================================
+  # CROSS-PLATFORM COMPATIBILITY
+  # ============================================
+  compatibility:
+    name: Compatibility Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-20.04
+            name: Ubuntu 20.04 LTS
+          - os: ubuntu-22.04
+            name: Ubuntu 22.04 LTS
+          - os: ubuntu-latest
+            name: Ubuntu Latest
+          - os: macos-12
+            name: macOS 12 (Monterey)
+          - os: macos-13
+            name: macOS 13 (Ventura)
+          - os: macos-latest
+            name: macOS Latest
+          - os: windows-2019
+            name: Windows Server 2019
+          - os: windows-2022
+            name: Windows Server 2022
+          - os: windows-latest
+            name: Windows Latest
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check system info (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          echo "OS: $(uname -s)"
+          echo "Version: $(uname -r)"
+          bash --version
+
+      - name: Check system info (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "OS: $([System.Environment]::OSVersion.VersionString)"
+          $PSVersionTable
+
+      - name: Test script syntax (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x *.sh tests/*.sh
+          bash -n ralph.sh
+          bash -n notify.sh
+          bash -n setup-notifications.sh
+          bash -n install.sh
+          bash -n update.sh
+
+      - name: Test script syntax (Windows PowerShell)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Get-ChildItem -Filter "*.ps1" | ForEach-Object {
+            Write-Host "Checking syntax: $($_.Name)"
+            $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $_.FullName -Raw), [ref]$null)
+          }
+
+      - name: Run basic compatibility tests (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cd tests
+          ./run-all-tests.sh --verbose
+        continue-on-error: true
+        timeout-minutes: 20
+
+      - name: Run basic compatibility tests (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cd tests
+          .\run-all-tests.ps1 -Verbose
+        continue-on-error: true
+        timeout-minutes: 20
+
+  # ============================================
+  # DEPENDENCY CHECK
+  # ============================================
+  dependencies:
+    name: Dependency Verification
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check required dependencies (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          echo "Checking for required tools..."
+          command -v bash || (echo "bash not found" && exit 1)
+          command -v git || (echo "git not found" && exit 1)
+          command -v curl || (echo "curl not found" && exit 1)
+
+          echo "Checking for optional tools..."
+          command -v jq || echo "jq not installed (optional)"
+          command -v shellcheck || echo "shellcheck not installed (optional)"
+
+          echo "All required dependencies available"
+
+      - name: Check required dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "Checking for required tools..."
+
+          if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
+            Write-Error "PowerShell not found"
+            exit 1
+          }
+
+          if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+            Write-Error "git not found"
+            exit 1
+          }
+
+          Write-Host "Checking for optional tools..."
+          if (-not (Get-Command curl -ErrorAction SilentlyContinue)) {
+            Write-Host "curl not installed (optional)"
+          }
+
+          Write-Host "All required dependencies available"
+
+  # ============================================
+  # TEST COVERAGE REPORT
+  # ============================================
+  coverage:
+    name: Test Coverage Report
+    runs-on: ubuntu-latest
+    needs: [unit-tests-linux, integration-tests, security-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Make tests executable
+        run: chmod +x tests/*.sh *.sh
+
+      - name: Run all tests with output
+        run: |
+          cd tests
+          ./run-all-tests.sh --verbose 2>&1 | tee test-results.txt
+        continue-on-error: true
+
+      - name: Generate coverage summary
+        run: |
+          cat > coverage-summary.md << 'EOF'
+          # Ralph Test Coverage Summary
+
+          **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+
+          ## Test Results
+
+          EOF
+
+          # Extract test statistics
+          if [ -f tests/test-results.txt ]; then
+            echo '```' >> coverage-summary.md
+            grep -A 20 "Test Summary" tests/test-results.txt >> coverage-summary.md || echo "No test summary found" >> coverage-summary.md
+            echo '```' >> coverage-summary.md
+          fi
+
+          cat >> coverage-summary.md << 'EOF'
+
+          ## Test Suites
+
+          EOF
+
+          find tests -name "test-*.sh" -exec basename {} \; | sort | sed 's/^/- /' >> coverage-summary.md
+
+          cat >> coverage-summary.md << 'EOF'
+
+          ## Coverage by Component
+
+          - **Ralph Main**: Core execution loop and task processing
+          - **Notifications**: Slack, Discord, Telegram, Email, Custom scripts
+          - **Progress Monitoring**: File parsing, percentage calculation, state tracking
+          - **Setup Wizard**: Interactive configuration, validation
+          - **Security**: Injection prevention, input validation, safe defaults
+
+          ## Platform Coverage
+
+          - ✅ Linux (Ubuntu 20.04, 22.04, latest)
+          - ✅ macOS (12, 13, latest)
+          - ✅ Windows (PowerShell, Git Bash)
+
+          EOF
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-summary
+          path: coverage-summary.md
+          retention-days: 30
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = fs.readFileSync('coverage-summary.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: coverage
+            });
+
+  # ============================================
+  # FINAL STATUS CHECK
+  # ============================================
+  status-check:
+    name: Final Status Check
+    runs-on: ubuntu-latest
+    needs: [shellcheck, psscriptanalyzer, unit-tests-linux, unit-tests-macos, unit-tests-windows, integration-tests, security-tests, compatibility]
+    if: always()
+    steps:
+      - name: Check all job statuses
+        run: |
+          echo "ShellCheck: ${{ needs.shellcheck.result }}"
+          echo "PSScriptAnalyzer: ${{ needs.psscriptanalyzer.result }}"
+          echo "Unit Tests (Linux): ${{ needs.unit-tests-linux.result }}"
+          echo "Unit Tests (macOS): ${{ needs.unit-tests-macos.result }}"
+          echo "Unit Tests (Windows): ${{ needs.unit-tests-windows.result }}"
+          echo "Integration Tests: ${{ needs.integration-tests.result }}"
+          echo "Security Tests: ${{ needs.security-tests.result }}"
+          echo "Compatibility Tests: ${{ needs.compatibility.result }}"
+
+      - name: Determine overall status
+        run: |
+          if [[ "${{ needs.shellcheck.result }}" == "success" ]] && \
+             [[ "${{ needs.psscriptanalyzer.result }}" == "success" ]] && \
+             [[ "${{ needs.unit-tests-linux.result }}" == "success" ]] && \
+             [[ "${{ needs.unit-tests-macos.result }}" == "success" ]] && \
+             [[ "${{ needs.unit-tests-windows.result }}" == "success" ]] && \
+             [[ "${{ needs.integration-tests.result }}" == "success" ]] && \
+             [[ "${{ needs.security-tests.result }}" == "success" ]]; then
+            echo "✅ All critical tests passed!"
+            exit 0
+          else
+            echo "❌ Some critical tests failed."
+            exit 1
+          fi

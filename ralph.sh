@@ -19,6 +19,16 @@ set -euo pipefail
 
 RALPH_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Load constants
+if [ -f "$RALPH_DIR/lib/constants.sh" ]; then
+    source "$RALPH_DIR/lib/constants.sh"
+fi
+
+# Load platform utilities for cross-platform support
+if [ -f "$RALPH_DIR/lib/platform-utils.sh" ]; then
+    source "$RALPH_DIR/lib/platform-utils.sh"
+fi
+
 # Colors (defined early for use in validation messages)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -26,23 +36,133 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Log directory for errors (use platform-appropriate paths)
+if command -v get_home_dir &>/dev/null && command -v get_temp_dir &>/dev/null; then
+    USER_HOME=$(get_home_dir)
+    TEMP_DIR=$(get_temp_dir)
+else
+    USER_HOME="${HOME}"
+    TEMP_DIR="${TMPDIR:-/tmp}"
+fi
+
+LOG_DIR="${USER_HOME}/.portableralph/logs"
+if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
+    echo "Warning: Could not create log directory: $LOG_DIR" >&2
+    LOG_DIR="${TEMP_DIR}/ralph_logs"
+    mkdir -p "$LOG_DIR" 2>/dev/null || LOG_DIR=""
+fi
+
+# Error logging function
+log_error() {
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local message="$1"
+    local logfile="${LOG_DIR}/ralph_$(date '+%Y%m%d').log"
+
+    # Log to file if LOG_DIR is available
+    if [ -n "$LOG_DIR" ] && [ -d "$LOG_DIR" ]; then
+        if ! echo "[$timestamp] ERROR: $message" >> "$logfile" 2>/dev/null; then
+            # If logging to file fails, at least note it on stderr
+            echo "[$timestamp] WARNING: Failed to write to log file: $logfile" >&2
+        fi
+    fi
+
+    # Always log to stderr
+    echo -e "${RED}Error: $message${NC}" >&2
+}
+
+# Source shared validation library
+source "${RALPH_DIR}/lib/validation.sh"
+
+# The following validation functions are now loaded from lib/validation.sh:
+# - validate_webhook_url() / validate_url()
+# - validate_numeric()
+# - validate_email()
+# - validate_file_path() / validate_path()
+# - json_escape()
+# - mask_token()
+
+# Just use the library's validate_path function
+# Users should be able to use whatever plan files they want
+validate_file_path() {
+    validate_path "$@"
+}
+
 # Validate config file syntax before sourcing
 validate_config() {
     local config_file="$1"
-    if [ -f "$config_file" ] && ! bash -n "$config_file" 2>/dev/null; then
+
+    # Check if file exists
+    if [ ! -f "$config_file" ]; then
+        return 0  # File doesn't exist, nothing to validate
+    fi
+
+    # Just check basic bash syntax
+    if ! bash -n "$config_file" 2>/dev/null; then
         echo -e "${YELLOW}Warning: Syntax error in $config_file${NC}" >&2
         echo -e "${YELLOW}Run: bash -n $config_file to see details${NC}" >&2
         return 1
     fi
+
     return 0
 }
 
-# Load configuration
-if [ -f "$HOME/.ralph.env" ] && validate_config "$HOME/.ralph.env"; then
-    source "$HOME/.ralph.env"
+# Load configuration (use platform-appropriate config location)
+RALPH_CONFIG_FILE="${USER_HOME}/.ralph.env"
+if [ -f "$RALPH_CONFIG_FILE" ] && validate_config "$RALPH_CONFIG_FILE"; then
+    source "$RALPH_CONFIG_FILE"
+
+    # Validate loaded configuration values
+    if [ -n "${RALPH_SLACK_WEBHOOK_URL:-}" ]; then
+        if ! validate_webhook_url "$RALPH_SLACK_WEBHOOK_URL" "RALPH_SLACK_WEBHOOK_URL"; then
+            echo -e "${YELLOW}Warning: Invalid RALPH_SLACK_WEBHOOK_URL, disabling Slack notifications${NC}" >&2
+            unset RALPH_SLACK_WEBHOOK_URL
+        fi
+    fi
+
+    if [ -n "${RALPH_DISCORD_WEBHOOK_URL:-}" ]; then
+        if ! validate_webhook_url "$RALPH_DISCORD_WEBHOOK_URL" "RALPH_DISCORD_WEBHOOK_URL"; then
+            echo -e "${YELLOW}Warning: Invalid RALPH_DISCORD_WEBHOOK_URL, disabling Discord notifications${NC}" >&2
+            unset RALPH_DISCORD_WEBHOOK_URL
+        fi
+    fi
+
+    if [ -n "${RALPH_EMAIL_TO:-}" ]; then
+        if ! validate_email "$RALPH_EMAIL_TO" "RALPH_EMAIL_TO"; then
+            echo -e "${YELLOW}Warning: Invalid RALPH_EMAIL_TO, disabling email notifications${NC}" >&2
+            unset RALPH_EMAIL_TO
+        fi
+    fi
+
+    if [ -n "${RALPH_EMAIL_FROM:-}" ]; then
+        if ! validate_email "$RALPH_EMAIL_FROM" "RALPH_EMAIL_FROM"; then
+            echo -e "${YELLOW}Warning: Invalid RALPH_EMAIL_FROM, disabling email notifications${NC}" >&2
+            unset RALPH_EMAIL_FROM
+        fi
+    fi
+
+    if [ -n "${RALPH_NOTIFY_FREQUENCY:-}" ]; then
+        local notify_min="${NOTIFY_FREQUENCY_MIN:-1}"
+        local notify_max="${NOTIFY_FREQUENCY_MAX:-100}"
+        local notify_default="${NOTIFY_FREQUENCY_DEFAULT:-5}"
+        if ! validate_numeric "$RALPH_NOTIFY_FREQUENCY" "RALPH_NOTIFY_FREQUENCY" "$notify_min" "$notify_max"; then
+            echo -e "${YELLOW}Warning: Invalid RALPH_NOTIFY_FREQUENCY, using default: ${notify_default}${NC}" >&2
+            export RALPH_NOTIFY_FREQUENCY="$notify_default"
+        fi
+    fi
 fi
 
-VERSION="1.6.0"
+# Decrypt encrypted environment variables
+if [ -f "$RALPH_DIR/decrypt-env.sh" ]; then
+    source "$RALPH_DIR/decrypt-env.sh"
+    if ! decrypt_ralph_env 2>&1 | grep -q "^Error:"; then
+        : # Decryption succeeded or no encrypted values
+    else
+        echo -e "${YELLOW}Warning: Failed to decrypt some environment variables${NC}" >&2
+        echo "Run 'ralph notify setup' if you have notification issues" >&2
+    fi
+fi
+
+VERSION="1.7.0"
 
 # Auto-commit setting (default: true)
 # Can be disabled via: ralph config commit off
@@ -64,10 +184,61 @@ should_skip_commit_from_plan() {
     ' "$plan_file"
 }
 
-# Notification helper (sends to all configured platforms: Slack, Discord, Telegram)
+# Notification helper with retry logic and error logging
 notify() {
     local message="$1"
-    "$RALPH_DIR/notify.sh" "$message" 2>/dev/null || true
+    local emoji="${2:-}"
+    local max_retries="${NOTIFY_MAX_RETRIES:-3}"
+    local retry_delay="${NOTIFY_RETRY_DELAY:-2}"
+    local attempt=1
+    local notification_log="${LOG_DIR}/ralph_notifications_$(date '+%Y%m%d').log"
+
+    # Skip if LOG_DIR is not available (use platform-appropriate null device)
+    if [ -z "$LOG_DIR" ] || [ ! -d "$LOG_DIR" ]; then
+        if command -v get_null_device &>/dev/null; then
+            notification_log="$(get_null_device)"
+        else
+            notification_log="/dev/null"
+        fi
+    fi
+
+    while [ $attempt -le $max_retries ]; do
+        local notify_output
+        local notify_exit=0
+
+        # Capture output and exit code
+        notify_output=$("$RALPH_DIR/notify.sh" "$message" "$emoji" 2>&1) || notify_exit=$?
+
+        # Log the output with proper error handling (check for null device)
+        local null_dev="/dev/null"
+        if command -v get_null_device &>/dev/null; then
+            null_dev="$(get_null_device)"
+        fi
+        if [ "$notification_log" != "$null_dev" ] && [ "$notification_log" != "NUL" ]; then
+            if ! echo "[$(date '+%Y-%m-%d %H:%M:%S')] Attempt $attempt: $notify_output" >> "$notification_log" 2>/dev/null; then
+                # If logging fails, report to stderr but don't fail the notification
+                echo "Warning: Failed to write to notification log: $notification_log" >&2
+            fi
+        fi
+
+        if [ $notify_exit -eq 0 ]; then
+            return 0
+        fi
+
+        if [ $attempt -lt $max_retries ]; then
+            log_error "Notification attempt $attempt/$max_retries failed (exit $notify_exit), retrying in ${retry_delay}s..."
+            sleep $retry_delay
+            # Exponential backoff
+            retry_delay=$((retry_delay * 2))
+        else
+            local msg_truncate="${MESSAGE_TRUNCATE_LENGTH:-100}"
+            log_error "Notification failed after $max_retries attempts (exit $notify_exit): ${message:0:$msg_truncate}..."
+        fi
+
+        attempt=$((attempt + 1))
+    done
+
+    return 1  # Failed after all retries
 }
 
 # Check if any notification platform is configured
@@ -201,30 +372,53 @@ fi
 
 # Handle config subcommand
 if [ "$1" = "config" ]; then
-    CONFIG_FILE="$HOME/.ralph.env"
+    CONFIG_FILE="$RALPH_CONFIG_FILE"
 
     # Helper to set a config value (handles both export and non-export patterns)
     set_config_value() {
         local key="$1"
         local value="$2"
+
+        # Security: Escape special characters in value for safe sed usage
+        # This prevents sed injection by escaping: / \ & newlines and special chars
+        local escaped_value
+        escaped_value=$(printf '%s\n' "$value" | sed -e 's/[\/&]/\\&/g' -e 's/$/\\/' | tr -d '\n' | sed 's/\\$//')
+
         if [ -f "$CONFIG_FILE" ]; then
             # Check if key exists (with or without export)
             if grep -qE "^(export )?${key}=" "$CONFIG_FILE" 2>/dev/null; then
                 # Update existing (handle both patterns)
-                sed -i "s/^export ${key}=.*/export ${key}=\"${value}\"/" "$CONFIG_FILE"
-                sed -i "s/^${key}=.*/export ${key}=\"${value}\"/" "$CONFIG_FILE"
+                # Use a temporary file for atomic operation
+                local temp_file
+                temp_file=$(mktemp) || {
+                    log_error "Failed to create temp file for config update"
+                    return 1
+                }
+                chmod 600 "$temp_file"
+                trap 'rm -f "$temp_file" 2>/dev/null' RETURN
+
+                # Process the file line by line to avoid sed injection
+                while IFS= read -r line || [ -n "$line" ]; do
+                    if [[ "$line" =~ ^export\ ${key}= ]] || [[ "$line" =~ ^${key}= ]]; then
+                        echo "export ${key}=\"${escaped_value}\""
+                    else
+                        echo "$line"
+                    fi
+                done < "$CONFIG_FILE" > "$temp_file"
+
+                mv "$temp_file" "$CONFIG_FILE"
             else
                 # Append to existing file (preserve content)
                 echo "" >> "$CONFIG_FILE"
                 echo "# Auto-commit setting" >> "$CONFIG_FILE"
-                echo "export ${key}=\"${value}\"" >> "$CONFIG_FILE"
+                echo "export ${key}=\"${escaped_value}\"" >> "$CONFIG_FILE"
             fi
         else
             # Create new file
             echo '# PortableRalph Configuration' > "$CONFIG_FILE"
             echo "# Generated on $(date)" >> "$CONFIG_FILE"
             echo "" >> "$CONFIG_FILE"
-            echo "export ${key}=\"${value}\"" >> "$CONFIG_FILE"
+            echo "export ${key}=\"${escaped_value}\"" >> "$CONFIG_FILE"
             chmod 600 "$CONFIG_FILE"
         fi
     }
@@ -283,18 +477,31 @@ fi
 
 PLAN_FILE="$1"
 MODE="${2:-build}"
-MAX_ITERATIONS="${3:-0}"
+MAX_ITERATIONS="${3:-${MAX_ITERATIONS_DEFAULT:-0}}"
 
-# Validate plan file exists
+# Validate plan file path and existence
+if ! validate_file_path "$PLAN_FILE" "Plan file"; then
+    exit 1
+fi
+
 if [ ! -f "$PLAN_FILE" ]; then
-    echo -e "${RED}Error: Plan file not found: $PLAN_FILE${NC}"
+    log_error "Plan file not found: $PLAN_FILE"
     exit 1
 fi
 
 # Validate mode
 if [ "$MODE" != "plan" ] && [ "$MODE" != "build" ]; then
-    echo -e "${RED}Error: Mode must be 'plan' or 'build', got: $MODE${NC}"
+    log_error "Mode must be 'plan' or 'build', got: $MODE"
     usage
+fi
+
+# Validate max iterations
+if [ "$MAX_ITERATIONS" != "0" ]; then
+    max_iter_min="${MAX_ITERATIONS_MIN:-1}"
+    max_iter_max="${MAX_ITERATIONS_MAX:-10000}"
+    if ! validate_numeric "$MAX_ITERATIONS" "Max iterations" "$max_iter_min" "$max_iter_max"; then
+        exit 1
+    fi
 fi
 
 # Derive progress file name from plan file
@@ -394,6 +601,41 @@ is_done() {
     return 1
 }
 
+# ============================================================================
+# CONCURRENCY PROTECTION (Fix for GitHub Issue #1)
+# ============================================================================
+# Prevent multiple Ralph instances from running on the same plan file
+# This fixes API Error 400 due to tool use race conditions
+
+# Generate lock file path based on plan file (unique per plan)
+PLAN_HASH=$(echo "$PLAN_FILE_ABS" | md5sum 2>/dev/null | cut -d' ' -f1 || echo "$PLAN_BASENAME")
+LOCK_FILE="${TEMP_DIR:-/tmp}/ralph_${PLAN_HASH}.lock"
+
+# Cleanup function for graceful exit
+cleanup_lock() {
+    if [ -n "${LOCK_FILE:-}" ]; then
+        release_lock "$LOCK_FILE" 2>/dev/null || true
+    fi
+}
+
+# Set up trap to release lock on exit (normal or error)
+trap cleanup_lock EXIT INT TERM
+
+# Acquire lock before starting the main loop
+if ! acquire_lock "$LOCK_FILE"; then
+    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${RED}  ERROR: Another Ralph instance is already running this plan${NC}"
+    echo -e "${RED}  Plan: $PLAN_FILE${NC}"
+    echo -e "${RED}  Lock: $LOCK_FILE${NC}"
+    echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${YELLOW}To force a new instance, remove the lock file:${NC}"
+    echo -e "  rm -f $LOCK_FILE"
+    exit 1
+fi
+
+echo -e "${GREEN}Lock acquired: $LOCK_FILE${NC}"
+
 # Main loop
 while true; do
     # Check exit conditions
@@ -420,20 +662,162 @@ while true; do
     echo -e "${BLUE}══════════════════ ITERATION $ITERATION ══════════════════${NC}"
     echo ""
 
-    # Build the prompt with substitutions
-    PROMPT=$(cat "$PROMPT_TEMPLATE" | \
-        sed "s|\${PLAN_FILE}|$PLAN_FILE_ABS|g" | \
-        sed "s|\${PROGRESS_FILE}|$PROGRESS_FILE|g" | \
-        sed "s|\${PLAN_NAME}|$PLAN_BASENAME|g" | \
-        sed "s|\${AUTO_COMMIT}|$SHOULD_COMMIT|g")
+    # Build the prompt with substitutions (safely escape for sed to prevent injection)
+    # Escape special sed characters: & \ / newlines
+    escape_sed() {
+        local str="$1"
+        # Escape backslashes first, then forward slashes, then ampersands
+        str="${str//\\/\\\\}"
+        str="${str//\//\\/}"
+        str="${str//&/\\&}"
+        printf '%s' "$str"
+    }
 
-    # Run Claude
-    echo "$PROMPT" | claude -p \
-        --dangerously-skip-permissions \
-        --model sonnet \
-        --verbose 2>&1 || {
-            echo -e "${RED}Claude exited with error, continuing...${NC}"
+    # Variables for sed escaping (not using local since we're in main loop, not a function)
+    safe_plan_file=$(escape_sed "$PLAN_FILE_ABS")
+    safe_progress_file=$(escape_sed "$PROGRESS_FILE")
+    safe_plan_name=$(escape_sed "$PLAN_BASENAME")
+    safe_should_commit=$(escape_sed "$SHOULD_COMMIT")
+
+    PROMPT=$(cat "$PROMPT_TEMPLATE" | \
+        sed "s|\${PLAN_FILE}|$safe_plan_file|g" | \
+        sed "s|\${PROGRESS_FILE}|$safe_progress_file|g" | \
+        sed "s|\${PLAN_NAME}|$safe_plan_name|g" | \
+        sed "s|\${AUTO_COMMIT}|$safe_should_commit|g")
+
+    # Run Claude with retry logic (configurable attempts with exponential backoff)
+    max_claude_retries="${CLAUDE_MAX_RETRIES:-3}"
+    claude_retry_delay="${CLAUDE_RETRY_DELAY:-5}"
+    claude_attempt=1
+    claude_success=false
+    claude_exit_code=0
+    claude_errors=""
+    error_detected=false
+    error_type="unknown"
+
+    while [ $claude_attempt -le $max_claude_retries ]; do
+        if [ $claude_attempt -gt 1 ]; then
+            echo -e "${YELLOW}Retrying Claude CLI (attempt $claude_attempt/$max_claude_retries) in ${claude_retry_delay}s...${NC}"
+            sleep $claude_retry_delay
+        fi
+
+        # Reset for this attempt
+        claude_exit_code=0
+        error_detected=false
+        error_type="unknown"
+        claude_output_file=$(mktemp) || {
+            log_error "Failed to create temp file for Claude output"
+            exit 1
         }
+        claude_error_file=$(mktemp) || {
+            rm -f "$claude_output_file"
+            log_error "Failed to create temp file for Claude errors"
+            exit 1
+        }
+        chmod 600 "$claude_output_file" "$claude_error_file"
+
+        # Run Claude
+        echo "$PROMPT" | claude -p \
+            --dangerously-skip-permissions \
+            --model sonnet \
+            --verbose > "$claude_output_file" 2>"$claude_error_file" || claude_exit_code=$?
+
+        # Display output on first attempt or final retry
+        if [ $claude_attempt -eq 1 ] || [ $claude_attempt -eq $max_claude_retries ]; then
+            if [ -f "$claude_output_file" ]; then
+                cat "$claude_output_file"
+            fi
+        fi
+
+        # Capture any error output
+        claude_errors=""
+        if [ -f "$claude_error_file" ]; then
+            claude_errors=$(cat "$claude_error_file" 2>/dev/null || echo "")
+        fi
+
+        # Check for known error patterns even if exit code is 0
+        if [ $claude_exit_code -ne 0 ]; then
+            error_detected=true
+            case $claude_exit_code in
+                1)   error_type="general error" ;;
+                2)   error_type="CLI usage error" ;;
+                130) error_type="interrupted by user (Ctrl+C)" ;;
+                *)   error_type="exit code $claude_exit_code" ;;
+            esac
+        fi
+
+        # Check error output for known patterns
+        if [ -n "$claude_errors" ]; then
+            if echo "$claude_errors" | grep -qi "authentication\|unauthorized\|api.*key"; then
+                error_detected=true
+                error_type="authentication failure"
+            elif echo "$claude_errors" | grep -qi "rate.*limit\|too.*many.*requests"; then
+                error_detected=true
+                error_type="rate limit exceeded"
+            elif echo "$claude_errors" | grep -qi "network\|connection\|timeout"; then
+                error_detected=true
+                error_type="network error"
+            elif echo "$claude_errors" | grep -qi "not.*found\|command.*not.*found"; then
+                error_detected=true
+                error_type="Claude CLI not found or not in PATH"
+            # GitHub Issue #1: Detect API 400 errors from tool use concurrency
+            elif echo "$claude_errors" | grep -qi "400\|bad.*request\|tool.*use\|concurrency"; then
+                error_detected=true
+                error_type="API 400 error (tool use concurrency)"
+            fi
+        fi
+
+        # Clean up temp files
+        rm -f "$claude_output_file" "$claude_error_file"
+
+        # Check if we succeeded
+        if [ "$error_detected" = false ]; then
+            claude_success=true
+            break
+        fi
+
+        # Log the attempt error
+        log_error "Claude CLI error at iteration $ITERATION (attempt $claude_attempt/$max_claude_retries): $error_type"
+        if [ -n "$claude_errors" ]; then
+            local err_truncate="${ERROR_DETAILS_TRUNCATE_LENGTH:-500}"
+            log_error "Error details: ${claude_errors:0:$err_truncate}"
+        fi
+
+        # For non-retryable errors, don't retry
+        if [[ "$error_type" =~ "authentication"|"CLI usage error"|"interrupted by user"|"not found" ]]; then
+            echo -e "${RED}Non-retryable error detected: $error_type${NC}"
+            break
+        fi
+
+        # Increment retry counter and increase backoff with jitter
+        claude_attempt=$((claude_attempt + 1))
+        if [ $claude_attempt -le $max_claude_retries ]; then
+            # Exponential backoff: 5s, 10s, 20s with random jitter (0-2s)
+            # Jitter prevents "thundering herd" when multiple instances retry simultaneously
+            # This is a key fix for GitHub Issue #1 (concurrency issues)
+            jitter=$((RANDOM % 3))
+            claude_retry_delay=$(( (claude_retry_delay * 2) + jitter ))
+        fi
+    done
+
+    # If all retries failed, stop iterations
+    if [ "$claude_success" = false ]; then
+        echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${RED}  Claude CLI Error (after $claude_attempt attempts): $error_type${NC}"
+        echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+        # Check if this is a transient error that might benefit from manual retry
+        # API 400 (tool use concurrency) is now retryable with proper locking
+        if [[ "$error_type" =~ "rate limit"|"network"|"timeout"|"API 400" ]]; then
+            echo -e "${YELLOW}This appears to be a transient error.${NC}"
+            echo -e "${YELLOW}You may want to retry in a few minutes.${NC}"
+        fi
+
+        # Send error notification and log
+        log_error "Stopping Ralph due to Claude CLI failure at iteration $ITERATION after $claude_attempt attempts"
+        notify ":x: *Ralph Error*\n\`\`\`Plan: $PLAN_BASENAME\nIteration: $ITERATION\nError: $error_type (after $claude_attempt retries)\nRepo: $REPO_NAME\`\`\`" ":x:"
+        exit $claude_exit_code
+    fi
 
     echo ""
     echo -e "${GREEN}Iteration $ITERATION complete${NC}"
@@ -450,14 +834,23 @@ while true; do
         break
     fi
 
-    # Send iteration notification (configurable frequency via RALPH_NOTIFY_FREQUENCY, default: every 5 iterations)
-    NOTIFY_FREQ="${RALPH_NOTIFY_FREQUENCY:-5}"
+    # Send iteration notification (configurable frequency via RALPH_NOTIFY_FREQUENCY)
+    notify_default="${NOTIFY_FREQUENCY_DEFAULT:-5}"
+    NOTIFY_FREQ="${RALPH_NOTIFY_FREQUENCY:-$notify_default}"
+    # Validate notification frequency
+    notify_min="${NOTIFY_FREQUENCY_MIN:-1}"
+    notify_max="${NOTIFY_FREQUENCY_MAX:-100}"
+    if ! validate_numeric "$NOTIFY_FREQ" "RALPH_NOTIFY_FREQUENCY" "$notify_min" "$notify_max"; then
+        NOTIFY_FREQ="$notify_default"
+        log_error "Invalid RALPH_NOTIFY_FREQUENCY, using default: $notify_default"
+    fi
     if [ "$ITERATION" -eq 1 ] || [ $((ITERATION % NOTIFY_FREQ)) -eq 0 ]; then
         notify ":gear: *Ralph Progress*: Iteration $ITERATION completed\n\`Plan: $PLAN_BASENAME\`" ":gear:"
     fi
 
     # Small delay between iterations
-    sleep 2
+    iter_delay="${ITERATION_DELAY:-2}"
+    sleep "$iter_delay"
 done
 
 echo ""

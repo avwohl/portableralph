@@ -28,7 +28,15 @@ set -euo pipefail
 
 VERSION="1.6.0"
 REPO_URL="https://github.com/aaron777collins/portableralph.git"
-DEFAULT_INSTALL_DIR="$HOME/ralph"
+
+# Determine home directory (use USERPROFILE on Windows, HOME elsewhere)
+if [ -n "${USERPROFILE:-}" ] && [[ "$(uname -s)" =~ ^(MINGW|MSYS|CYGWIN) ]]; then
+    USER_HOME="${USERPROFILE}"
+else
+    USER_HOME="${HOME}"
+fi
+
+DEFAULT_INSTALL_DIR="${USER_HOME}/ralph"
 
 # Colors (disabled in headless mode or non-tty)
 setup_colors() {
@@ -314,8 +322,19 @@ install_ralph() {
         spinner $! "Updating from git..."
         success "Updated to latest version"
     else
-        # Fresh install
-        rm -rf "$INSTALL_DIR" 2>/dev/null || true
+        # Fresh install - confirm if directory exists with content
+        if [[ -d "$INSTALL_DIR" ]] && [[ -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]]; then
+            if [[ "$HEADLESS" == "false" ]]; then
+                warn "Install directory exists and is not empty: $INSTALL_DIR"
+                if ! prompt_yn "Delete existing directory and continue?"; then
+                    error "Installation cancelled by user"
+                    exit 1
+                fi
+            fi
+            log "Removing existing directory..."
+            rm -rf "$INSTALL_DIR"
+        fi
+
         git clone --quiet "$REPO_URL" "$INSTALL_DIR" &
         spinner $! "Cloning repository..."
         success "Cloned repository"
@@ -341,12 +360,23 @@ configure_shell() {
     local shell_config=""
     local shell_name=""
 
-    # Detect shell
+    # Check for PowerShell on Windows
+    if [[ -n "${PSModulePath:-}" ]] && [[ "$(uname -s)" =~ ^(MINGW|MSYS|CYGWIN) ]]; then
+        # PowerShell profile
+        local ps_profile="${USER_HOME}/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1"
+        warn "Detected PowerShell. Please manually add to your PowerShell profile:"
+        echo "  File: $ps_profile"
+        echo "  Add: . ${USER_HOME}/.ralph.env"
+        echo "  Add: Set-Alias -Name ralph -Value '${INSTALL_DIR}/ralph.sh'"
+        return
+    fi
+
+    # Detect Unix-like shell
     if [[ -n "${ZSH_VERSION:-}" ]] || [[ "$SHELL" == *"zsh"* ]]; then
-        shell_config="$HOME/.zshrc"
+        shell_config="${USER_HOME}/.zshrc"
         shell_name="zsh"
     elif [[ -n "${BASH_VERSION:-}" ]] || [[ "$SHELL" == *"bash"* ]]; then
-        shell_config="$HOME/.bashrc"
+        shell_config="${USER_HOME}/.bashrc"
         shell_name="bash"
     else
         warn "Unknown shell. Please manually add ralph to your PATH."
@@ -364,7 +394,7 @@ configure_shell() {
         cat >> "$shell_config" << EOF
 
 # PortableRalph
-[[ -f ~/.ralph.env ]] && source ~/.ralph.env
+[[ -f ${USER_HOME}/.ralph.env ]] && source ${USER_HOME}/.ralph.env
 alias ralph='$INSTALL_DIR/ralph.sh'
 EOF
         success "Added to $shell_config"
@@ -500,7 +530,7 @@ setup_custom_interactive() {
 }
 
 write_notification_config() {
-    local config_file="$HOME/.ralph.env"
+    local config_file="${USER_HOME}/.ralph.env"
 
     log "Writing notification configuration..."
 

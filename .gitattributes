@@ -1,0 +1,41 @@
+# PortableRalph Git Attributes
+# Enforce consistent line endings across platforms
+
+# Auto-detect text files and normalize to LF in repo
+* text=auto
+
+# Shell scripts must use LF (Unix line endings)
+*.sh text eol=lf
+
+# PowerShell scripts must use CRLF (Windows line endings)
+*.ps1 text eol=crlf
+*.psm1 text eol=crlf
+*.psd1 text eol=crlf
+
+# Batch files use CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Documentation and config files
+*.md text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Environment files
+.env* text eol=lf
+
+# Ensure line endings are preserved for these
+*.gitattributes text eol=lf
+*.gitignore text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
