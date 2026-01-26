@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Ralph Progress Update</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .email-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .email-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .email-header .subtitle {
+            margin: 8px 0 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .email-body {
+            padding: 30px 20px;
+        }
+        .progress-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+        .iteration-info {
+            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .iteration-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(123, 31, 162, 0.1);
+        }
+        .iteration-row:last-child {
+            border-bottom: none;
+        }
+        .iteration-label {
+            font-weight: 600;
+            color: #6a1b9a;
+            font-size: 14px;
+        }
+        .iteration-value {
+            color: #4a148c;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .message-content {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #333333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .task-section {
+            margin: 25px 0;
+        }
+        .task-section h3 {
+            color: #333333;
+            font-size: 16px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+        .task-item {
+            background-color: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 12px 16px;
+            margin: 8px 0;
+            font-size: 14px;
+            color: #555555;
+        }
+        .task-item.completed {
+            background-color: #e8f5e9;
+            border-color: #81c784;
+        }
+        .task-item.completed::before {
+            content: "✓ ";
+            color: #388e3c;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .task-item.current {
+            background-color: #fff3e0;
+            border-color: #ffb74d;
+            font-weight: 600;
+        }
+        .task-item.current::before {
+            content: "→ ";
+            color: #f57c00;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .metadata {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 13px;
+            color: #666666;
+        }
+        .metadata-row {
+            margin: 8px 0;
+        }
+        .metadata-label {
+            font-weight: 600;
+            display: inline-block;
+            width: 100px;
+        }
+        .email-footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666666;
+        }
+        .email-footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .email-body {
+                padding: 20px 15px;
+            }
+            .iteration-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .iteration-value {
+                margin-top: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="email-header">
+            <h1>🤖 Ralph</h1>
+            <p class="subtitle">Autonomous Development Progress</p>
+        </div>
+
+        <!-- Body -->
+        <div class="email-body">
+            <!-- Progress Badge -->
+            <span class="progress-badge">⚙️ Progress Update</span>
+
+            <!-- Iteration Information -->
+            <div class="iteration-info">
+                <div class="iteration-row">
+                    <span class="iteration-label">Current Iteration</span>
+                    <span class="iteration-value">{{ITERATION}}</span>
+                </div>
+                <div class="iteration-row">
+                    <span class="iteration-label">Max Iterations</span>
+                    <span class="iteration-value">{{MAX_ITERATIONS}}</span>
+                </div>
+                <div class="iteration-row">
+                    <span class="iteration-label">Progress</span>
+                    <span class="iteration-value">{{PROGRESS_PERCENT}}%</span>
+                </div>
+            </div>
+
+            <!-- Main Message -->
+            <div class="message-content">{{MESSAGE}}</div>
+
+            <!-- Current Task (if available) -->
+            {{#HAS_CURRENT_TASK}}
+            <div class="task-section">
+                <h3>🎯 Current Task</h3>
+                <div class="task-item current">{{CURRENT_TASK}}</div>
+            </div>
+            {{/HAS_CURRENT_TASK}}
+
+            <!-- Completed Tasks (if available) -->
+            {{#HAS_COMPLETED_TASKS}}
+            <div class="task-section">
+                <h3>✅ Recently Completed</h3>
+                {{#COMPLETED_TASKS}}
+                <div class="task-item completed">{{TASK_NAME}}</div>
+                {{/COMPLETED_TASKS}}
+            </div>
+            {{/HAS_COMPLETED_TASKS}}
+
+            <!-- Metadata -->
+            <div class="metadata">
+                <div class="metadata-row">
+                    <span class="metadata-label">Timestamp:</span>
+                    <span>{{TIMESTAMP}}</span>
+                </div>
+                <div class="metadata-row">
+                    <span class="metadata-label">Hostname:</span>
+                    <span>{{HOSTNAME}}</span>
+                </div>
+                {{#HAS_PROJECT}}
+                <div class="metadata-row">
+                    <span class="metadata-label">Project:</span>
+                    <span>{{PROJECT}}</span>
+                </div>
+                {{/HAS_PROJECT}}
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="email-footer">
+            <p>This is an automated progress notification from Ralph.</p>
+            <p>Learn more at <a href="https://github.com/aaron777collins/portableralph">PortableRalph on GitHub</a></p>
+        </div>
+    </div>
+</body>
+</html>

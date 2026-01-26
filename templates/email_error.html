@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Ralph Error Alert</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .email-header {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .email-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .email-header .subtitle {
+            margin: 8px 0 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .email-body {
+            padding: 30px 20px;
+        }
+        .error-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+        .alert-box {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            border-left: 4px solid #d32f2f;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .alert-icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .alert-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #c62828;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .error-details {
+            background-color: #ffffff;
+            border: 1px solid #ef5350;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .error-label {
+            font-weight: 600;
+            color: #b71c1c;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .error-content {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #333333;
+            background-color: #fafafa;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .message-content {
+            background-color: #f8f9fa;
+            border-left: 4px solid #f44336;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #333333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .context-section {
+            margin: 25px 0;
+            padding: 20px;
+            background-color: #fff8e1;
+            border-radius: 4px;
+            border: 1px solid #ffb74d;
+        }
+        .context-section h3 {
+            color: #e65100;
+            font-size: 16px;
+            margin: 0 0 12px 0;
+        }
+        .context-item {
+            margin: 8px 0;
+            font-size: 14px;
+            color: #555555;
+        }
+        .context-label {
+            font-weight: 600;
+            color: #f57c00;
+            display: inline-block;
+            min-width: 120px;
+        }
+        .action-box {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .action-box h4 {
+            margin: 0 0 10px 0;
+            color: #1565c0;
+            font-size: 14px;
+        }
+        .action-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .action-box li {
+            margin: 6px 0;
+            font-size: 13px;
+            color: #333333;
+        }
+        .metadata {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 13px;
+            color: #666666;
+        }
+        .metadata-row {
+            margin: 8px 0;
+        }
+        .metadata-label {
+            font-weight: 600;
+            display: inline-block;
+            width: 100px;
+        }
+        .email-footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666666;
+        }
+        .email-footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .email-body {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="email-header">
+            <h1>🤖 Ralph</h1>
+            <p class="subtitle">Error Alert System</p>
+        </div>
+
+        <!-- Body -->
+        <div class="email-body">
+            <!-- Error Badge -->
+            <span class="error-badge">❌ Error Detected</span>
+
+            <!-- Alert Box -->
+            <div class="alert-box">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-title">An error occurred during execution</div>
+            </div>
+
+            <!-- Main Error Message -->
+            <div class="message-content">{{MESSAGE}}</div>
+
+            <!-- Error Details (if available) -->
+            {{#HAS_ERROR_DETAILS}}
+            <div class="error-details">
+                <div class="error-label">Error Details</div>
+                <div class="error-content">{{ERROR_DETAILS}}</div>
+            </div>
+            {{/HAS_ERROR_DETAILS}}
+
+            <!-- Stack Trace (if available) -->
+            {{#HAS_STACK_TRACE}}
+            <div class="error-details">
+                <div class="error-label">Stack Trace</div>
+                <div class="error-content">{{STACK_TRACE}}</div>
+            </div>
+            {{/HAS_STACK_TRACE}}
+
+            <!-- Context Information -->
+            {{#HAS_CONTEXT}}
+            <div class="context-section">
+                <h3>📋 Context Information</h3>
+                {{#HAS_ITERATION}}
+                <div class="context-item">
+                    <span class="context-label">Iteration:</span>
+                    <span>{{ITERATION}} / {{MAX_ITERATIONS}}</span>
+                </div>
+                {{/HAS_ITERATION}}
+                {{#HAS_TASK}}
+                <div class="context-item">
+                    <span class="context-label">Current Task:</span>
+                    <span>{{CURRENT_TASK}}</span>
+                </div>
+                {{/HAS_TASK}}
+                {{#HAS_FILE}}
+                <div class="context-item">
+                    <span class="context-label">File:</span>
+                    <span>{{ERROR_FILE}}</span>
+                </div>
+                {{/HAS_FILE}}
+            </div>
+            {{/HAS_CONTEXT}}
+
+            <!-- Suggested Actions -->
+            <div class="action-box">
+                <h4>💡 Suggested Actions</h4>
+                <ul>
+                    <li>Check the error details and stack trace above</li>
+                    <li>Review the progress file for the current state</li>
+                    <li>Verify API credentials and rate limits</li>
+                    <li>Check system logs for additional context</li>
+                    <li>Restart Ralph if the error is transient</li>
+                </ul>
+            </div>
+
+            <!-- Metadata -->
+            <div class="metadata">
+                <div class="metadata-row">
+                    <span class="metadata-label">Timestamp:</span>
+                    <span>{{TIMESTAMP}}</span>
+                </div>
+                <div class="metadata-row">
+                    <span class="metadata-label">Hostname:</span>
+                    <span>{{HOSTNAME}}</span>
+                </div>
+                {{#HAS_PROJECT}}
+                <div class="metadata-row">
+                    <span class="metadata-label">Project:</span>
+                    <span>{{PROJECT}}</span>
+                </div>
+                {{/HAS_PROJECT}}
+                <div class="metadata-row">
+                    <span class="metadata-label">Severity:</span>
+                    <span style="color: #d32f2f; font-weight: 600;">{{SEVERITY}}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="email-footer">
+            <p>This is an automated error notification from Ralph.</p>
+            <p>Learn more at <a href="https://github.com/aaron777collins/portableralph">PortableRalph on GitHub</a></p>
+        </div>
+    </div>
+</body>
+</html>

@@ -24,8 +24,14 @@ Ralph has two modes: **Plan** and **Build**. Understanding when to use each is k
 
 ### :mag: Plan Mode — "Let me think about this first"
 
+**Linux / macOS / Windows (WSL/Git Bash):**
 ```bash
 ralph ./feature.md plan
+```
+
+**Windows (PowerShell):**
+```powershell
+ralph .\feature.md plan
 ```
 
 **What it does:**
@@ -72,8 +78,14 @@ No existing login endpoint found.
 
 ### :hammer: Build Mode — "Go implement this"
 
+**Linux / macOS / Windows (WSL/Git Bash):**
 ```bash
 ralph ./feature.md build
+```
+
+**Windows (PowerShell):**
+```powershell
+ralph .\feature.md build
 ```
 
 **What it does:**
@@ -107,6 +119,7 @@ Build mode is the autonomous implementation engine. Ralph will:
 
 For best results, use **Plan → Review → Build**:
 
+**Linux / macOS / Windows (WSL/Git Bash):**
 ```bash
 # Step 1: Let Ralph analyze and create a task breakdown
 ralph ./my-feature.md plan
@@ -119,6 +132,21 @@ cat ./my-feature_PROGRESS.md
 
 # Step 3: If it looks good, run build mode
 ralph ./my-feature.md build
+```
+
+**Windows (PowerShell):**
+```powershell
+# Step 1: Let Ralph analyze and create a task breakdown
+ralph .\my-feature.md plan
+
+# Step 2: Review the progress file
+Get-Content .\my-feature_PROGRESS.md
+# Does the task list make sense?
+# Did Ralph understand your intent?
+# Any tasks missing or wrong?
+
+# Step 3: If it looks good, run build mode
+ralph .\my-feature.md build
 ```
 
 **Why this workflow?**
@@ -135,9 +163,16 @@ ralph ./my-feature.md build
 
 Limit how many tasks Ralph will complete:
 
+**Linux / macOS / Windows (WSL/Git Bash):**
 ```bash
 # Stop after 10 iterations (tasks)
 ralph ./feature.md build 10
+```
+
+**Windows (PowerShell):**
+```powershell
+# Stop after 10 iterations (tasks)
+ralph .\feature.md build 10
 ```
 
 **When to use:**
@@ -154,7 +189,20 @@ Press `Ctrl+C` at any time to stop Ralph. Your progress is saved—you can resum
 
 Ralph commits after each task. If something goes wrong:
 
+**Linux / macOS / Windows (WSL/Git Bash):**
 ```bash
+# See what Ralph did
+git log --oneline -5
+
+# Undo the last task
+git revert HEAD
+
+# Or reset multiple commits
+git reset --hard HEAD~3
+```
+
+**Windows (PowerShell):**
+```powershell
 # See what Ralph did
 git log --oneline -5
 

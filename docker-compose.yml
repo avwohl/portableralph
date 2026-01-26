@@ -1,0 +1,65 @@
+# Docker Compose configuration for portableralph testing
+# Usage:
+#   1. Copy .env.docker.example to .env.docker and fill in your API keys
+#   2. Run: docker-compose up -d
+#   3. Connect: docker-compose exec ralphcontainer bash
+#   4. Stop: docker-compose down
+
+version: '3.8'
+
+services:
+  ralphcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: portableralph-test
+    
+    # Mount the repo as a volume for live development
+    volumes:
+      - .:/home/ralphuser/portableralph:rw
+      # Persist Ralph configuration between runs
+      - ralph-config:/home/ralphuser/.config
+      - ralph-data:/home/ralphuser/.ralph
+    
+    # Environment variables for API access
+    # These are read from .env.docker file or host environment
+    environment:
+      # API Keys - passed from environment, NOT hardcoded
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      
+      # Model configuration - defaults to DeepSeek via OpenRouter
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-openrouter/deepseek/deepseek-chat}
+      - RALPH_DEFAULT_MODEL=${RALPH_DEFAULT_MODEL:-openrouter/deepseek/deepseek-chat}
+      
+      # Optional: Additional provider keys
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      
+      # Runtime configuration
+      - RALPH_LOG_LEVEL=${RALPH_LOG_LEVEL:-info}
+      - RALPH_CONFIG_DIR=/home/ralphuser/.ralph
+      
+      # Ensure proper terminal handling
+      - TERM=xterm-256color
+    
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+    
+    # No ports exposed - CLI only tool
+    # network_mode: none  # Uncomment to fully isolate network (breaks API calls)
+    
+    # Resource limits (optional, adjust as needed)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 2G
+    #       cpus: '2'
+
+# Named volumes for persistent data
+volumes:
+  ralph-config:
+    name: portableralph-config
+  ralph-data:
+    name: portableralph-data

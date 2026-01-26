@@ -3,6 +3,7 @@
 .env.local
 .env.*
 !.env.example
+!.env.docker.example
 
 # Ralph config (should be in ~/.ralph.env, but just in case)
 ralph.env
@@ -21,3 +22,14 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Docker
+.env.docker
+
+# Security - Private keys and certificates
+*.key
+*.pem
+
+# Security - Credentials files
+credentials
+credentials.*
