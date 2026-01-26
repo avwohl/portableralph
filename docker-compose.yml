@@ -5,57 +5,48 @@
 #   3. Connect: docker-compose exec ralphcontainer bash
 #   4. Stop: docker-compose down
 
-version: '3.8'
-
 services:
   ralphcontainer:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: portableralph-test
-    
+    container_name: ralphcontainer
+
+    # Load environment variables from .env.docker
+    env_file:
+      - .env.docker
+
     # Mount the repo as a volume for live development
     volumes:
       - .:/home/ralphuser/portableralph:rw
       # Persist Ralph configuration between runs
       - ralph-config:/home/ralphuser/.config
       - ralph-data:/home/ralphuser/.ralph
-    
-    # Environment variables for API access
-    # These are read from .env.docker file or host environment
+      # Persist Claude Code configuration
+      - ralph-claude:/home/ralphuser/.claude
+      # Test workspace
+      - ralph-workspace:/home/ralphuser/test-workspace
+
+    # Additional environment variables (non-sensitive defaults)
     environment:
-      # API Keys - passed from environment, NOT hardcoded
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      
-      # Model configuration - defaults to DeepSeek via OpenRouter
-      - CLAUDE_MODEL=${CLAUDE_MODEL:-openrouter/deepseek/deepseek-chat}
-      - RALPH_DEFAULT_MODEL=${RALPH_DEFAULT_MODEL:-openrouter/deepseek/deepseek-chat}
-      
-      # Optional: Additional provider keys
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      
-      # Runtime configuration
-      - RALPH_LOG_LEVEL=${RALPH_LOG_LEVEL:-info}
-      - RALPH_CONFIG_DIR=/home/ralphuser/.ralph
-      
-      # Ensure proper terminal handling
       - TERM=xterm-256color
-    
+      - HOME=/home/ralphuser
+      - RALPH_CONFIG_DIR=/home/ralphuser/.ralph
+
     # Keep container running for interactive use
     stdin_open: true
     tty: true
-    
-    # No ports exposed - CLI only tool
-    # network_mode: none  # Uncomment to fully isolate network (breaks API calls)
-    
-    # Resource limits (optional, adjust as needed)
-    # deploy:
-    #   resources:
-    #     limits:
-    #       memory: 2G
-    #       cpus: '2'
+
+    # Allow access to host network for OpenRouter whitelist proxy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '4'
 
 # Named volumes for persistent data
 volumes:
@@ -63,3 +54,7 @@ volumes:
     name: portableralph-config
   ralph-data:
     name: portableralph-data
+  ralph-claude:
+    name: portableralph-claude
+  ralph-workspace:
+    name: portableralph-workspace

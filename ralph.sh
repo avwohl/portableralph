@@ -779,7 +779,7 @@ while true; do
         # Log the attempt error
         log_error "Claude CLI error at iteration $ITERATION (attempt $claude_attempt/$max_claude_retries): $error_type"
         if [ -n "$claude_errors" ]; then
-            local err_truncate="${ERROR_DETAILS_TRUNCATE_LENGTH:-500}"
+            err_truncate="${ERROR_DETAILS_TRUNCATE_LENGTH:-500}"
             log_error "Error details: ${claude_errors:0:$err_truncate}"
         fi
 
