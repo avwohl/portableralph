@@ -1183,7 +1183,7 @@ if $TEST_MODE; then
 
     # Email configuration check
     if [ -n "${RALPH_EMAIL_TO:-}" ] && [ -n "${RALPH_EMAIL_FROM:-}" ]; then
-        local email_method="unknown"
+        email_method="unknown"
         if [ -n "${RALPH_SENDGRID_API_KEY:-}" ]; then
             email_method="SendGrid API"
         elif [ -n "${RALPH_AWS_SES_REGION:-}" ]; then
@@ -1244,7 +1244,7 @@ if $TEST_MODE; then
     echo ""
     if $SENT_ANY; then
         echo "Test complete! Check your notification channels."
-        if [ ${#SEND_ERRORS[@]} -gt 0 ]; then
+        if [[ "$(declare -p SEND_ERRORS 2>/dev/null)" == *"="* ]]; then
             echo ""
             echo "Note: Some platforms failed to send. Check configuration."
         fi
