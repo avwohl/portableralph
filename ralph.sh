@@ -718,10 +718,11 @@ while true; do
         }
         chmod 600 "$claude_output_file" "$claude_error_file"
 
+            #            --model sonnet \
         # Run Claude
         echo "$PROMPT" | claude -p \
             --dangerously-skip-permissions \
-            --model sonnet \
+                        --model claude-opus-4-5 \
             --verbose > "$claude_output_file" 2>"$claude_error_file" || claude_exit_code=$?
 
         # Display output on first attempt or final retry
