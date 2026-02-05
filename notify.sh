@@ -234,7 +234,7 @@ send_slack() {
         --max-time "$max_time" \
         --connect-timeout "$connect_timeout" \
         --data "$payload" \
-        "$RALPH_SLACK_WEBHOOK_URL" 2>&1)
+        "$RALPH_SLACK_WEBHOOK_URL" 2>/dev/null)
     local curl_exit=$?
 
     local success_min="${HTTP_STATUS_SUCCESS_MIN:-200}"
@@ -271,10 +271,13 @@ send_discord() {
     # Convert Slack-style formatting to Discord markdown safely
     # Avoid sed for user input - use bash substitution
     local discord_msg="$msg"
-    # Replace *text* with **text** for Discord bold
-    while [[ "$discord_msg" =~ \*([^*]+)\* ]]; do
-        discord_msg="${discord_msg/\*${BASH_REMATCH[1]}\*/**${BASH_REMATCH[1]}**}"
+    # Replace *text* with **text** for Discord bold (process left-to-right to avoid infinite loop)
+    local _converted=""
+    while [[ "$discord_msg" =~ ^([^*]*)\*([^*]+)\*(.*) ]]; do
+        _converted="${_converted}${BASH_REMATCH[1]}**${BASH_REMATCH[2]}**"
+        discord_msg="${BASH_REMATCH[3]}"
     done
+    discord_msg="${_converted}${discord_msg}"
 
     local payload
     if command -v jq &> /dev/null; then
@@ -312,7 +315,7 @@ send_discord() {
         --max-time "$max_time" \
         --connect-timeout "$connect_timeout" \
         --data "$payload" \
-        "$RALPH_DISCORD_WEBHOOK_URL" 2>&1)
+        "$RALPH_DISCORD_WEBHOOK_URL" 2>/dev/null)
     local curl_exit=$?
 
     local success_min="${HTTP_STATUS_SUCCESS_MIN:-200}"
@@ -396,8 +399,6 @@ send_telegram() {
         $TEST_MODE && echo "  Telegram: FAILED (temp file creation failed)"
         return 1
     }
-    trap 'rm -f "$error_output" 2>/dev/null' RETURN
-
     http_code=$(curl -s -w "%{http_code}" -o /dev/null \
         -X POST \
         -H 'Content-type: application/json' \
@@ -606,9 +607,11 @@ remove_template_section() {
     local start_tag="$2"
     local end_tag="$3"
 
-    # Use bash pattern matching to remove sections
-    while [[ "$content" =~ (.*)"$start_tag"[^}]*"$end_tag"(.*) ]]; do
-        content="${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
+    # Use bash parameter expansion to remove sections
+    while [[ "$content" == *"$start_tag"*"$end_tag"* ]]; do
+        local before="${content%%"$start_tag"*}"
+        local after="${content#*"$end_tag"}"
+        content="${before}${after}"
     done
 
     printf '%s' "$content"
@@ -707,8 +710,6 @@ send_email_smtp() {
         return 1
     }
     chmod 600 "$email_file"
-    trap 'rm -f "$email_file" 2>/dev/null' RETURN
-
     cat > "$email_file" << EOF
 From: $from
 To: $to
@@ -976,8 +977,8 @@ send_email() {
         msg_type="progress"
     fi
 
-    # Check if we should batch this message
-    if should_batch_email "$msg"; then
+    # Check if we should batch this message (never batch in test mode)
+    if ! $TEST_MODE && should_batch_email "$msg"; then
         add_to_batch "$msg"
         $TEST_MODE && echo "  Email: queued for batch"
         SENT_ANY=true
@@ -1044,7 +1045,7 @@ send_custom() {
 
     # Check script ownership (must be owned by current user or root)
     local script_owner
-    script_owner=$(stat -c '%U' "$RALPH_CUSTOM_NOTIFY_SCRIPT" 2>/dev/null || echo "unknown")
+    script_owner=$(stat -f '%Su' "$RALPH_CUSTOM_NOTIFY_SCRIPT" 2>/dev/null || stat -c '%U' "$RALPH_CUSTOM_NOTIFY_SCRIPT" 2>/dev/null || echo "unknown")
     if [ "$script_owner" != "$USER" ] && [ "$script_owner" != "root" ]; then
         $TEST_MODE && echo "  Custom: FAILED (script not owned by user or root)"
         return 1
@@ -1052,7 +1053,7 @@ send_custom() {
 
     # Security: Check file permissions - should not be world-writable
     local perms
-    perms=$(stat -c '%a' "$RALPH_CUSTOM_NOTIFY_SCRIPT" 2>/dev/null)
+    perms=$(stat -f '%Lp' "$RALPH_CUSTOM_NOTIFY_SCRIPT" 2>/dev/null || stat -c '%a' "$RALPH_CUSTOM_NOTIFY_SCRIPT" 2>/dev/null)
     if [[ "${perms: -1}" =~ [2367] ]]; then
         $TEST_MODE && echo "  Custom: FAILED (script is world-writable)"
         return 1
@@ -1083,7 +1084,7 @@ send_custom() {
     if [ "$script_owner" = "root" ]; then
         # Check if we've already confirmed this script (cache confirmation)
         local script_hash
-        script_hash=$(sha256sum "$RALPH_CUSTOM_NOTIFY_SCRIPT" 2>/dev/null | awk '{print $1}')
+        script_hash=$( (sha256sum "$RALPH_CUSTOM_NOTIFY_SCRIPT" 2>/dev/null || shasum -a 256 "$RALPH_CUSTOM_NOTIFY_SCRIPT" 2>/dev/null) | awk '{print $1}')
         # Use platform-appropriate home directory
         if command -v get_home_dir &>/dev/null; then
             local user_home=$(get_home_dir)
@@ -1132,7 +1133,13 @@ send_custom() {
     # Execute script with timeout and capture exit code
     local exit_code=0
     local script_timeout="${CUSTOM_SCRIPT_TIMEOUT:-30}"
-    timeout "$script_timeout" "$RALPH_CUSTOM_NOTIFY_SCRIPT" "$clean_msg" > /dev/null 2>&1 || exit_code=$?
+    if command -v timeout &>/dev/null; then
+        timeout "$script_timeout" "$RALPH_CUSTOM_NOTIFY_SCRIPT" "$clean_msg" > /dev/null 2>&1 || exit_code=$?
+    elif command -v gtimeout &>/dev/null; then
+        gtimeout "$script_timeout" "$RALPH_CUSTOM_NOTIFY_SCRIPT" "$clean_msg" > /dev/null 2>&1 || exit_code=$?
+    else
+        "$RALPH_CUSTOM_NOTIFY_SCRIPT" "$clean_msg" > /dev/null 2>&1 || exit_code=$?
+    fi
 
     if [ $exit_code -eq 0 ]; then
         SENT_ANY=true
@@ -1214,27 +1221,27 @@ if ! $TEST_MODE; then
 fi
 
 # Track errors for better reporting
-declare -A SEND_ERRORS
+SEND_ERRORS=""
 
 # Send to all configured platforms with individual error tracking
 if ! send_slack "$MESSAGE"; then
-    SEND_ERRORS[slack]="failed"
+    SEND_ERRORS="${SEND_ERRORS} slack"
 fi
 
 if ! send_discord "$MESSAGE"; then
-    SEND_ERRORS[discord]="failed"
+    SEND_ERRORS="${SEND_ERRORS} discord"
 fi
 
 if ! send_telegram "$MESSAGE"; then
-    SEND_ERRORS[telegram]="failed"
+    SEND_ERRORS="${SEND_ERRORS} telegram"
 fi
 
 if ! send_email "$MESSAGE"; then
-    SEND_ERRORS[email]="failed"
+    SEND_ERRORS="${SEND_ERRORS} email"
 fi
 
 if ! send_custom "$MESSAGE"; then
-    SEND_ERRORS[custom]="failed"
+    SEND_ERRORS="${SEND_ERRORS} custom"
 fi
 
 # Cleanup rate limit file on exit
@@ -1244,7 +1251,7 @@ if $TEST_MODE; then
     echo ""
     if $SENT_ANY; then
         echo "Test complete! Check your notification channels."
-        if [[ "$(declare -p SEND_ERRORS 2>/dev/null)" == *"="* ]]; then
+        if [ -n "$SEND_ERRORS" ]; then
             echo ""
             echo "Note: Some platforms failed to send. Check configuration."
         fi

@@ -380,11 +380,6 @@ if [ "$1" = "config" ]; then
         local key="$1"
         local value="$2"
 
-        # Security: Escape special characters in value for safe sed usage
-        # This prevents sed injection by escaping: / \ & newlines and special chars
-        local escaped_value
-        escaped_value=$(printf '%s\n' "$value" | sed -e 's/[\/&]/\\&/g' -e 's/$/\\/' | tr -d '\n' | sed 's/\\$//')
-
         if [ -f "$CONFIG_FILE" ]; then
             # Check if key exists (with or without export)
             if grep -qE "^(export )?${key}=" "$CONFIG_FILE" 2>/dev/null; then
@@ -396,12 +391,11 @@ if [ "$1" = "config" ]; then
                     return 1
                 }
                 chmod 600 "$temp_file"
-                trap 'rm -f "$temp_file" 2>/dev/null' RETURN
 
                 # Process the file line by line to avoid sed injection
                 while IFS= read -r line || [ -n "$line" ]; do
                     if [[ "$line" =~ ^export\ ${key}= ]] || [[ "$line" =~ ^${key}= ]]; then
-                        echo "export ${key}=\"${escaped_value}\""
+                        printf 'export %s="%s"\n' "$key" "$value"
                     else
                         echo "$line"
                     fi
@@ -412,14 +406,14 @@ if [ "$1" = "config" ]; then
                 # Append to existing file (preserve content)
                 echo "" >> "$CONFIG_FILE"
                 echo "# Auto-commit setting" >> "$CONFIG_FILE"
-                echo "export ${key}=\"${escaped_value}\"" >> "$CONFIG_FILE"
+                printf 'export %s="%s"\n' "$key" "$value" >> "$CONFIG_FILE"
             fi
         else
             # Create new file
             echo '# PortableRalph Configuration' > "$CONFIG_FILE"
             echo "# Generated on $(date)" >> "$CONFIG_FILE"
             echo "" >> "$CONFIG_FILE"
-            echo "export ${key}=\"${escaped_value}\"" >> "$CONFIG_FILE"
+            printf 'export %s="%s"\n' "$key" "$value" >> "$CONFIG_FILE"
             chmod 600 "$CONFIG_FILE"
         fi
     }

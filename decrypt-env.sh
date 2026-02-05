@@ -21,21 +21,24 @@ decrypt_value() {
         return 1
     fi
 
-    # Check for machine-id required for decryption
-    if [ ! -f /etc/machine-id ]; then
-        echo "Error: Cannot decrypt $var_name - /etc/machine-id not found" >&2
-        echo "Decryption requires system machine ID for key derivation" >&2
-        echo "" # Return empty when machine-id missing
-        return 1
-    fi
-
     # Extract encrypted portion
     local encrypted="${value#ENC:}"
 
-    # Decrypt using cryptographically secure key derivation
-    # Uses PBKDF2 with high iteration count and machine-specific salt
-    local machine_id
-    machine_id=$(cat /etc/machine-id 2>/dev/null || echo 'default')
+    # Get machine ID for key derivation (platform-specific)
+    local machine_id=""
+    if [ -f /etc/machine-id ]; then
+        machine_id=$(cat /etc/machine-id 2>/dev/null)
+    elif command -v ioreg &>/dev/null; then
+        # macOS: use IOPlatformUUID
+        machine_id=$(ioreg -rd1 -c IOPlatformExpertDevice 2>/dev/null | awk -F'"' '/IOPlatformUUID/{print $4}')
+    fi
+
+    if [ -z "$machine_id" ]; then
+        echo "Error: Cannot decrypt $var_name - no machine ID found" >&2
+        echo "Decryption requires system machine ID for key derivation" >&2
+        echo ""
+        return 1
+    fi
 
     # Create a cryptographically strong key material from multiple sources
     # Including hostname, username, and machine ID
