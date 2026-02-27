@@ -707,30 +707,17 @@ while true; do
         claude_exit_code=0
         error_detected=false
         error_type="unknown"
-        claude_output_file=$(mktemp) || {
-            log_error "Failed to create temp file for Claude output"
-            exit 1
-        }
         claude_error_file=$(mktemp) || {
-            rm -f "$claude_output_file"
             log_error "Failed to create temp file for Claude errors"
             exit 1
         }
-        chmod 600 "$claude_output_file" "$claude_error_file"
+        chmod 600 "$claude_error_file"
 
-            #            --model sonnet \
-        # Run Claude
+        # Run Claude - stdout streams directly to terminal, stderr captured for error checking
         echo "$PROMPT" | claude -p \
             --dangerously-skip-permissions \
-                        --model claude-opus-4-5 \
-            --verbose > "$claude_output_file" 2>"$claude_error_file" || claude_exit_code=$?
-
-        # Display output on first attempt or final retry
-        if [ $claude_attempt -eq 1 ] || [ $claude_attempt -eq $max_claude_retries ]; then
-            if [ -f "$claude_output_file" ]; then
-                cat "$claude_output_file"
-            fi
-        fi
+            --model opus \
+            --verbose 2>"$claude_error_file" || claude_exit_code=$?
 
         # Capture any error output
         claude_errors=""
@@ -771,7 +758,7 @@ while true; do
         fi
 
         # Clean up temp files
-        rm -f "$claude_output_file" "$claude_error_file"
+        rm -f "$claude_error_file"
 
         # Check if we succeeded
         if [ "$error_detected" = false ]; then
